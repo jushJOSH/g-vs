@@ -5,12 +5,13 @@
             "label": "C/C++: g++ build active file",
             "command": "/usr/bin/g++",
             "args": [
+                "-std=c++17",
                 "-fdiagnostics-color=always",
-                "-I",
-                "${fileDirname}/include",
                 "-g",
                 "${file}",
                 "${fileDirname}/include/cpp/*",
+                "-I",
+                "${fileDirname}/include",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}",
                 "`",
@@ -19,6 +20,7 @@
                 "--libs",
                 "gstreamer-1.0",
                 "gstreamer-rtsp-server-1.0",
+                "nlohmann_json",
                 "`"
             ],
             "options": {

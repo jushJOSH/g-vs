@@ -3,6 +3,9 @@
 #include "pipeline.hpp"
 #include "bus.hpp"
 #include "brick.hpp"
+#include <videoserver.hpp>
+
+#include <crow.h>
 
 int
 tutorial_main (int argc, char *argv[])
@@ -79,9 +82,6 @@ tutorial_main (int argc, char *argv[])
   return 0;
 }
 
-int
-main (int argc, char *argv[])
-{
-  return tutorial_main (argc, argv);
+int main() {
+  Videoserver server("127.0.0.1", 1337);
 }
-
