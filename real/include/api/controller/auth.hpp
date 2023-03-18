@@ -9,27 +9,32 @@
 
 #include OATPP_CODEGEN_BEGIN(ApiController) //<- Begin Codegen
 
-class VsapiController : public oatpp::web::server::api::ApiController {
+class AuthController : public oatpp::web::server::api::ApiController {
 // Default constructor
 public:
-    VsapiController(const std::shared_ptr<ObjectMapper>& objectMapper)
-    :oatpp::web::server::api::ApiController(objectMapper)
+    AuthController(const std::shared_ptr<ObjectMapper>& objectMapper)
+    : oatpp::web::server::api::ApiController(objectMapper)
     {}
 
 // Static
 public: 
-    static std::shared_ptr<VsapiController> createShared(OATPP_COMPONENT(std::shared_ptr<ObjectMapper>, objectMapper)) {
-        return std::make_shared<VsapiController>(objectMapper);
+    static std::shared_ptr<AuthController> createShared(OATPP_COMPONENT(std::shared_ptr<ObjectMapper>, objectMapper)) {
+        return std::make_shared<AuthController>(objectMapper);
     }
 
-// Endpoint callbacks
 protected:
     VSTypes::OatResponce makeToken();
     VSTypes::OatResponce refreshToken();
 
 // Endpoints
 public:
-    ENDPOINT("POST", "/auth/new", makeAuth);
+    ENDPOINT("POST", "/auth/new", makeToken) {
+
+    }
+
+    ENDPOINT("POST", "/auth/refresh", refreshToken) {
+
+    }
 };
 
 #include OATPP_CODEGEN_END(ApiController) 
