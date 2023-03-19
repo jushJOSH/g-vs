@@ -1,58 +1,48 @@
-#include <oatpp/web/server/HttpConnectionHandler.hpp>
+#include <api/controller/auth.hpp>
+#include <api/controller/users.hpp>
+#include <api/controller/vsapi.hpp>
+
+#include <api/component/app.hpp>
+#include <api/component/database.hpp>
+#include <api/component/service.hpp>
 
 #include <oatpp/network/Server.hpp>
-#include <oatpp/network/tcp/server/ConnectionProvider.hpp>
 
-/** 
- * Custom Request Handler
- */
-class Handler : public oatpp::web::server::HttpRequestHandler {
-public:
+#include <api/handler/error.hpp>
 
-  /**
-   * Handle incoming request and return outgoing response.
-   */
-  std::shared_ptr<OutgoingResponse> handle(const std::shared_ptr<IncomingRequest>& request) override {
-    return ResponseFactory::createResponse(Status::CODE_200, "Hello World!");
-  }
+#include <iostream>
 
-};
+void run(const oatpp::base::CommandLineArguments& args) {
 
-void run() {
+  AppComponent appComponent(args);
+  ServiceComponent serviceComponent;
+  DatabaseComponent databaseComponent;
 
-  /* Create Router for HTTP requests routing */
-  auto router = oatpp::web::server::HttpRouter::createShared();
-  
-  /* Route GET - "/hello" requests to Handler */
-  router->route("GET", "/hello", std::make_shared<Handler>());
+  /* create ApiControllers and add endpoints to router */
 
-  /* Create HTTP connection handler with router */
-  auto connectionHandler = oatpp::web::server::HttpConnectionHandler::createShared(router);
+  auto router = serviceComponent.httpRouter.getObject();
+  router->addController(AuthController::createShared());
+  //router->addController(UserController::createShared());
+  //router->addController(VsapiController::createShared());
 
-  /* Create TCP connection provider */
-  auto connectionProvider = oatpp::network::tcp::server::ConnectionProvider::createShared({"localhost", 8000, oatpp::network::Address::IP_4});
-  /* Create server which takes provided TCP connections and passes them to HTTP connection handler */
-  oatpp::network::Server server(connectionProvider, connectionHandler);
+  /* create server */
 
-  /* Priny info about server port */
-  OATPP_LOGI("MyApp", "Server running on port %s", connectionProvider->getProperty("port").getData());
+  oatpp::network::Server server(serviceComponent.serverConnectionProvider.getObject(),
+                                serviceComponent.serverConnectionHandler.getObject());
 
-  /* Run server */
+  OATPP_LOGD("Server", "Running on port %s...", serviceComponent.serverConnectionProvider.getObject()->getProperty("port").toString()->c_str());
 
   server.run();
+
 }
 
-int main() {
+int main(int argc, const char * argv[]) {
 
-  /* Init oatpp Environment */
   oatpp::base::Environment::init();
 
-  /* Run App */
-  run();
+  run(oatpp::base::CommandLineArguments(argc, argv));
 
-  /* Destroy oatpp Environment */
   oatpp::base::Environment::destroy();
 
   return 0;
-
 }

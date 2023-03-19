@@ -5,9 +5,9 @@
 #include <pipeline/pipeline.hpp>
 #include <nlohmann/json.hpp>
 
-#include <api/controller/vsapicontroller.hpp>
-#include <api/controller/authcontroller.hpp>
-#include <api/controller/userscontroller.hpp>
+#include <api/controller/vsapi.hpp>
+#include <api/controller/auth.hpp>
+#include <api/controller/users.hpp>
 
 #include <media/media.hpp>
 

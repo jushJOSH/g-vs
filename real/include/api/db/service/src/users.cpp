@@ -9,7 +9,7 @@ void UserService::createUser(const oatpp::Object<UserDto>& dto) {
 }
 
 void UserService::deleteUser(const oatpp::Object<UserDto>& dto) {
-    auto result = user_database->createUser(dto->login);
+    auto result = user_database->createUser(dto);
     OATPP_ASSERT_HTTP(result->isSuccess(), VSTypes::OatStatus::CODE_500, result->getErrorMessage());
 }
 

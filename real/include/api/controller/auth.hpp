@@ -22,19 +22,10 @@ public:
         return std::make_shared<AuthController>(objectMapper);
     }
 
-protected:
-    VSTypes::OatResponce makeToken();
-    VSTypes::OatResponce refreshToken();
-
 // Endpoints
 public:
-    ENDPOINT("POST", "/auth/new", makeToken) {
-
-    }
-
-    ENDPOINT("POST", "/auth/refresh", refreshToken) {
-
-    }
+    ENDPOINT("POST", "/auth/new", makeToken);
+    ENDPOINT("POST", "/auth/refresh", refreshToken);
 };
 
 #include OATPP_CODEGEN_END(ApiController) 

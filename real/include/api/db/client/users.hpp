@@ -4,6 +4,7 @@
 #include <oatpp/orm/DbClient.hpp>
 #include <oatpp/core/macro/codegen.hpp>
 
+#include <api/db/dto/user.hpp>
 #include <types.hpp>
 
 #include OATPP_CODEGEN_BEGIN(DbClient) 

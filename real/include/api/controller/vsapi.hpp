@@ -24,12 +24,12 @@ public:
 
 // Endpoint callbacks
 protected:
-    VSTypes::OatResponce makeToken();
-    VSTypes::OatResponce refreshToken();
+//    VSTypes::OatResponse makeToken();
+//    VSTypes::OatResponse refreshToken();
 
 // Endpoints
 public:
-    ENDPOINT("POST", "/auth/new", makeToken);
+//    ENDPOINT("POST", "/auth/new", makeToken);
 };
 
 #include OATPP_CODEGEN_END(ApiController) 
