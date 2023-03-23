@@ -18,13 +18,13 @@ class AuthService {
 // Auth client handlers
 public:
     void authorize(const oatpp::Object<AuthDto>& dto);
-    void deauthorize(const oatpp::Object<AuthDto>& dto);
-    void refreshToken(const oatpp::String& oldRefreshToken, const oatpp::Object<AuthDto>& newDto);
-    oatpp::Int32 getUserByAuth(const oatpp::Object<AuthDto>& dto);
+    void deauthorize(const oatpp::String& token);
+    void refreshToken(const oatpp::String& newAuthToken, const oatpp::Int32& userid);
+    oatpp::Int32 getUserByAuth(const oatpp::String& token);
 
     void initAuthTable();
 
 private:
     // Injecting database component
-    OATPP_COMPONENT(std::shared_ptr<AuthClient>, m_database);
+    OATPP_COMPONENT(std::shared_ptr<AuthClient>, auth_database);
 };

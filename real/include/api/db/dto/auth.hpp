@@ -11,8 +11,6 @@ class AuthDto : public oatpp::DTO {
     DTO_FIELD(Int32, id);
     DTO_FIELD(Int32, user);
     DTO_FIELD(String, auth_token);
-    DTO_FIELD(String, refresh_token);
-    DTO_FIELD(String, end_time);
 };
 
 #include OATPP_CODEGEN_END(DTO)

@@ -22,11 +22,11 @@ class UserService {
 // User client handlers
 public:
     void createUser(const oatpp::Object<UserDto>& dto);
-    void deleteUser(const oatpp::Object<UserDto>& dto);
-    void modifyUser(const oatpp::Object<UserDto>& dto);
+    void deleteUser(const oatpp::String& username);
+    void modifyUser(const oatpp::Object<UserDto>& dto, const oatpp::String& olduser);
     
     oatpp::Object<UserDto> getUserByCreds(const oatpp::Object<UserDto>& dto);
-    oatpp::Object<UserDto> getUserById(const oatpp::Object<UserDto>& dto);
+    oatpp::Object<UserDto> getUserById(const oatpp::Int32& id);
     oatpp::Object<UserDto> getCurrentUser(const oatpp::Object<AuthDto>& dto);
     
     void initUserTable();

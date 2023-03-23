@@ -12,7 +12,7 @@ class UserDto : public oatpp::DTO {
     DTO_INIT(UserDto, DTO)
 
     DTO_FIELD(Int32, id);
-    DTO_FIELD(String, login);
+    DTO_FIELD(String, username);
     DTO_FIELD(String, digest);
     DTO_FIELD(Vector<oatpp::Object<MediaDto>>, user_media);
 };

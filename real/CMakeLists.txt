@@ -16,10 +16,11 @@ find_package(oatpp          1.3.0 REQUIRED)
 find_package(oatpp-swagger  1.3.0 REQUIRED)
 find_package(oatpp-postgresql 1.3.0 REQUIRED)
 find_package(Threads REQUIRED)
+find_package(jwt-cpp REQUIRED)
 
 # Включение исходных файлов
 MACRO(HEADER_DIRECTORIES return_list directory)
-    FILE(GLOB_RECURSE new_list ${directory}/*.hpp ${directory}/*.cpp)
+    FILE(GLOB_RECURSE new_list ${directory}/*.hpp ${directory}/*.cpp ${directory}/*.h)
     SET(file_list "")
     FOREACH(file_path ${new_list})
         LIST(APPEND file_list ${file_path})
@@ -39,4 +40,4 @@ set(SOURCES
 # Добавление исходных файлов и подключаемых директорий
 add_executable(${PROJECT_NAME} ${SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${GST_INCLUDE_DIRS} ${GLIB_INCLUDE_DIRS} ${GST_APP_INCLUDE_DIRS} ${JSON_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${GST_LIBRARIES} ${GLIB_LIBRARIES} ${GST_APP_LIBRARIES} ${JSON_LIBRARIES} oatpp::oatpp oatpp::oatpp-swagger oatpp::oatpp-postgresql Threads::Threads)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${GST_LIBRARIES} ${GLIB_LIBRARIES} ${GST_APP_LIBRARIES} ${JSON_LIBRARIES} oatpp::oatpp oatpp::oatpp-swagger oatpp::oatpp-postgresql Threads::Threads jwt-cpp::jwt-cpp)

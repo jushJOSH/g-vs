@@ -29,8 +29,9 @@ public:
     QUERY(modifyUser,
     "UPDATE users" 
     " SET username=:user.username, digest=:user.digest"
-    " WHERE id=:user.id;",
-    PARAM(oatpp::Object<UserDto>, user))
+    " WHERE username=:oldusername;",
+    PARAM(oatpp::Object<UserDto>, user),
+    PARAM(oatpp::String, oldusername))
 
     QUERY(getUserByCreds,
     "SELECT * FROM users"

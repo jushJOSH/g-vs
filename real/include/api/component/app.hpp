@@ -6,6 +6,8 @@
 #include <oatpp/core/macro/component.hpp>
 #include <oatpp/core/base/CommandLineArguments.hpp>
 
+#include <api/token/jwt.hpp>
+
 #include <cstdlib>
 
 class AppComponent {
@@ -58,5 +60,14 @@ public:
 
         OATPP_LOGE("AppComponent", "--pguri not specified.");
         throw std::runtime_error("[AppComponent] --pguri not specified");
+    }()); 
+
+    OATPP_CREATE_COMPONENT(std::shared_ptr<JWT>, jwt)([]{
+        OATPP_COMPONENT(oatpp::Object<ConfigDto>, config);
+
+        oatpp::String secret = oatpp::String::loadFromFile(config->secretPath->c_str());
+        if (secret == nullptr) throw std::runtime_error("secretPath is non-existing file!");
+        
+        return std::make_shared<JWT>(secret, config->issuer);
     }());
 };

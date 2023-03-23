@@ -8,13 +8,13 @@ void UserService::createUser(const oatpp::Object<UserDto>& dto) {
     dto->id = VSMisc::fetchId<UserDto>(result);
 }
 
-void UserService::deleteUser(const oatpp::Object<UserDto>& dto) {
-    auto result = user_database->createUser(dto);
+void UserService::deleteUser(const oatpp::String& username) {
+    auto result = user_database->deleteUser(username);
     OATPP_ASSERT_HTTP(result->isSuccess(), VSTypes::OatStatus::CODE_500, result->getErrorMessage());
 }
 
-void UserService::modifyUser(const oatpp::Object<UserDto>& dto) {
-    auto result = user_database->modifyUser(dto);
+void UserService::modifyUser(const oatpp::Object<UserDto>& dto, const oatpp::String &oldusername) {
+    auto result = user_database->modifyUser(dto, oldusername);
     OATPP_ASSERT_HTTP(result->isSuccess(), VSTypes::OatStatus::CODE_500, result->getErrorMessage());
 }
 
@@ -26,8 +26,8 @@ oatpp::Object<UserDto> UserService::getUserByCreds(const oatpp::Object<UserDto>&
     return dto;
 }
 
-oatpp::Object<UserDto> UserService::getUserById(const oatpp::Object<UserDto>& dto) {
-    auto result = user_database->getUserById(dto->id);
+oatpp::Object<UserDto> UserService::getUserById(const oatpp::Int32& id) {
+    auto result = user_database->getUserById(id);
     OATPP_ASSERT_HTTP(result->isSuccess(), VSTypes::OatStatus::CODE_500, result->getErrorMessage());
 
     auto receivedData = result->fetch<oatpp::Vector<oatpp::Object<UserDto>>>();
@@ -37,7 +37,7 @@ oatpp::Object<UserDto> UserService::getUserById(const oatpp::Object<UserDto>& dt
 
 oatpp::Object<UserDto> UserService::getCurrentUser(const oatpp::Object<AuthDto>& dto) {
     // Searching user id by received auth token
-    auto authResult = auth_database->getUserByAuth(dto);
+    auto authResult = auth_database->getUserByAuth(dto->auth_token);
     OATPP_ASSERT_HTTP(authResult->isSuccess(), VSTypes::OatStatus::CODE_500, authResult->getErrorMessage());
     
     // Saving user_id for use

@@ -22,7 +22,7 @@ void run(const oatpp::base::CommandLineArguments& args) {
 
   auto router = serviceComponent.httpRouter.getObject();
   router->addController(AuthController::createShared());
-  //router->addController(UserController::createShared());
+  router->addController(UserController::createShared());
   //router->addController(VsapiController::createShared());
 
   /* create server */

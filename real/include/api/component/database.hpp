@@ -12,15 +12,8 @@
 /// @brief Database component to communicate with postgresql
 class DatabaseComponent {
 public:
-    /// @brief Struct to hold all Database interfaces
-    struct PostgresqlClients {
-        std::shared_ptr<AuthClient> IAuth;
-        std::shared_ptr<VsapiClient> IVsapi;
-        std::shared_ptr<UserClient> IUsers;
-    };
-
-    /// @brief Create database interfaces
-    OATPP_CREATE_COMPONENT(PostgresqlClients, postgreComponents)([](){
+    // Make connection provider
+    OATPP_CREATE_COMPONENT(std::shared_ptr<oatpp::postgresql::ConnectionPool>, connection)([](){
         // Get config component
         OATPP_COMPONENT(oatpp::Object<ConfigDto>, config);
 
@@ -28,18 +21,45 @@ public:
         auto connectionProvider = std::make_shared<oatpp::postgresql::ConnectionProvider>(config->dbConnectionString);
 
         // Create database-specific ConnectionPool
-        auto connectionPool = oatpp::postgresql::ConnectionPool::createShared(connectionProvider,
+        return oatpp::postgresql::ConnectionPool::createShared(connectionProvider,
                                                                             10 /* max-connections */,
                                                                             std::chrono::seconds(5) /* connection TTL */);
+    }());
+
+    // Make auth client
+    OATPP_CREATE_COMPONENT(std::shared_ptr<AuthClient>, auth_database)([](){
+        // Get connection pool component
+        OATPP_COMPONENT(std::shared_ptr<oatpp::postgresql::ConnectionPool>, connection);
 
         // Create database-specific Executor
-        auto executor = std::make_shared<oatpp::postgresql::Executor>(connectionPool);
+        auto executor = std::make_shared<oatpp::postgresql::Executor>(connection);
 
-        // Making structure object with all table interfaces
-        return PostgresqlClients {
-            std::make_shared<AuthClient>(executor),
-            std::make_shared<VsapiClient>(executor),
-            std::make_shared<UserClient>(executor)
-        };
+        // Making AuthClient
+        return std::make_shared<AuthClient>(executor);
     }());
+
+    // Make vsapi client
+    OATPP_CREATE_COMPONENT(std::shared_ptr<VsapiClient>, vsapi_database)([](){
+        // Get connection pool component
+        OATPP_COMPONENT(std::shared_ptr<oatpp::postgresql::ConnectionPool>, connection);
+
+        // Create database-specific Executor
+        auto executor = std::make_shared<oatpp::postgresql::Executor>(connection);
+
+        // Making VsapiClient
+        return std::make_shared<VsapiClient>(executor);
+    }());
+
+    // Make user client
+    OATPP_CREATE_COMPONENT(std::shared_ptr<UserClient>, user_database)([](){
+        // Get connection pool component
+        OATPP_COMPONENT(std::shared_ptr<oatpp::postgresql::ConnectionPool>, connection);
+
+        // Create database-specific Executor
+        auto executor = std::make_shared<oatpp::postgresql::Executor>(connection);
+
+        // Making UserClient
+        return std::make_shared<UserClient>(executor);
+    }());
+
 };
