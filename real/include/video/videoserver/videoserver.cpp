@@ -1,4 +1,4 @@
-#include <videoserver/videoserver.hpp>
+#include <video/videoserver/videoserver.hpp>
 
 Videoserver::Videoserver(const std::string &host, int port, bool nonblocking, bool multithreaded, bool startLoop) 
 : 

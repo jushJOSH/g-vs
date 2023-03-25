@@ -27,7 +27,6 @@ public:
         return std::make_shared<UserController>(objectMapper);
     }
 
-// TODO : make authorization
 // Endpoints
 public:
     ENDPOINT("POST", "/user/new", makeUser, BODY_STRING(oatpp::String, userinfo));

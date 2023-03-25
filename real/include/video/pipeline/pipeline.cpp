@@ -1,5 +1,5 @@
-#include <pipeline/pipeline.hpp>
-#include <brick/brick.hpp>
+#include <video/pipeline/pipeline.hpp>
+#include <video/brick/brick.hpp>
 
 GPipeline::GPipeline(const std::string& pipeName) 
 : self(gst_pipeline_new(pipeName.c_str())), pipelineBus(*this)

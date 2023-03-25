@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include <source/source.hpp>
+#include <video/source/source.hpp>
 #include <nlohmann/json.hpp>
 #include <gst/gst.h>
 

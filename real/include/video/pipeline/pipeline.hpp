@@ -3,8 +3,8 @@
 #include <string>
 #include <gst/gst.h>
 
-#include <bus/bus.hpp>
-#include <brick/brick.hpp>
+#include <video/bus/bus.hpp>
+#include <video/brick/brick.hpp>
 
 class GPipeline {
 public:

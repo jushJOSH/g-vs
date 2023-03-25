@@ -1,5 +1,5 @@
-#include <pipeline/pipeline.hpp>
-#include <bus/bus.hpp>
+#include <video/pipeline/pipeline.hpp>
+#include <video/bus/bus.hpp>
 
 GBus::GBus(GPipeline &pipe)
 : self(gst_element_get_bus(pipe))

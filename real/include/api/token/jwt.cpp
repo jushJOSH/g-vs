@@ -8,6 +8,7 @@ JWT::JWT(const oatpp::String& secret, const oatpp::String& issuer)
             .allow_algorithm(jwt::algorithm::hs512{secret}))
 {}
 
+// TODO add token lifespan in config dto
 oatpp::String JWT::createToken(const std::shared_ptr<JwtPayload>& payload) {
     auto token = jwt::create()
                     .set_issuer(this->issuer)

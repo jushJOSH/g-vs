@@ -2,14 +2,14 @@
 
 #include <gst/gst.h>
 #include <vector>
-#include <pipeline/pipeline.hpp>
+#include <video/pipeline/pipeline.hpp>
 #include <nlohmann/json.hpp>
 
 #include <api/controller/vsapi.hpp>
 #include <api/controller/auth.hpp>
 #include <api/controller/users.hpp>
 
-#include <media/media.hpp>
+#include <video/media/media.hpp>
 
 class Videoserver {
 public:

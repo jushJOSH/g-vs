@@ -1,48 +1,57 @@
-#include <api/controller/auth.hpp>
-#include <api/controller/users.hpp>
-#include <api/controller/vsapi.hpp>
-
-#include <api/component/app.hpp>
-#include <api/component/database.hpp>
-#include <api/component/service.hpp>
-
-#include <oatpp/network/Server.hpp>
-
-#include <api/handler/error.hpp>
+#include <gst/gst.h>
+#include <glib.h>
+#include <gst/app/app.h>
 
 #include <iostream>
 
-void run(const oatpp::base::CommandLineArguments& args) {
+int totalsamples = 0;
+static GstFlowReturn on_new_sample(GstElement* appsink, gpointer data) {
+    GstSample *sample = gst_app_sink_pull_sample(GST_APP_SINK(appsink));
+    GstBuffer *buffer = gst_sample_get_buffer(sample);
 
-  AppComponent appComponent(args);
-  ServiceComponent serviceComponent;
-  DatabaseComponent databaseComponent;
-
-  /* create ApiControllers and add endpoints to router */
-
-  auto router = serviceComponent.httpRouter.getObject();
-  router->addController(AuthController::createShared());
-  router->addController(UserController::createShared());
-  //router->addController(VsapiController::createShared());
-
-  /* create server */
-
-  oatpp::network::Server server(serviceComponent.serverConnectionProvider.getObject(),
-                                serviceComponent.serverConnectionHandler.getObject());
-
-  OATPP_LOGD("Server", "Running on port %s...", serviceComponent.serverConnectionProvider.getObject()->getProperty("port").toString()->c_str());
-
-  server.run();
-
+    gst_sample_unref(sample);
+    return GST_FLOW_OK;
 }
 
-int main(int argc, const char * argv[]) {
+int main(int argc, char *argv[]) {
+  GstElement *pipeline, *src, *appsink, *convert;
+  GMainLoop *loop;
 
-  oatpp::base::Environment::init();
+  /* Инициализация GStreamer */
+  gst_init(&argc, &argv);
 
-  run(oatpp::base::CommandLineArguments(argc, argv));
+  /* Создание элементов */
+  pipeline = gst_pipeline_new("pipeline");
+  src = gst_element_factory_make("videotestsrc", "src");
+  convert = gst_element_factory_make("videoconvert", "convert");
+  appsink = gst_element_factory_make("appsink", "sink");
 
-  oatpp::base::Environment::destroy();
+  /* Добавление элементов в пайплайн */
+  gst_bin_add_many(GST_BIN(pipeline), src, appsink, convert, NULL);
+
+  /* Установка свойств элемента appsink */
+  g_object_set(G_OBJECT(appsink), "emit-signals", TRUE, NULL);
+
+  /* Подключение обработчика сигнала new-sample */
+  g_signal_connect(appsink, "new-sample", G_CALLBACK(on_new_sample), NULL);
+
+  /* Установка связей между элементами */
+  if (!gst_element_link_many(src, convert, appsink, NULL))
+  {
+    std::cout << "Фигня давай все по новой" << std::endl;
+  }
+
+  /* Запуск пайплайна */
+  gst_element_set_state(pipeline, GST_STATE_PLAYING);
+
+  /* Создание и запуск главного цикла GStreamer */
+  loop = g_main_loop_new(NULL, FALSE);
+  g_main_loop_run(loop);
+
+  /* Остановка пайплайна и освобождение ресурсов */
+  gst_element_set_state(pipeline, GST_STATE_NULL);
+  gst_object_unref(GST_OBJECT(pipeline));
+  g_main_loop_unref(loop);
 
   return 0;
 }
