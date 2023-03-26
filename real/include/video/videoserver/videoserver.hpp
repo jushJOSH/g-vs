@@ -9,8 +9,6 @@
 #include <api/controller/auth.hpp>
 #include <api/controller/users.hpp>
 
-#include <video/media/media.hpp>
-
 class Videoserver {
 public:
 /// @brief Videoserver HTTP constructor
@@ -43,9 +41,6 @@ void stopMainLoop();
 /// @return  GMainLoop* GST Main loop
 GMainLoop *getGSTMainLoop() const;
 
-/// @brief Allows to get all pipelines
-/// @return std::vector Pipelines
-std::vector<MediaUnit> getGSTPipelines() const;
 
 // ----- JSON manipulation -----
 
@@ -60,7 +55,6 @@ void to_json(nlohmann::json& object) const;
 private:
 // --- GStreamer params ---
 GMainLoop *mainLoop;
-std::vector<MediaUnit> pipelines;
 
 // --- HTTP server params
 std::string host;

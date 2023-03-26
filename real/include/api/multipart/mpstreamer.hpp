@@ -6,15 +6,19 @@
 #include <oatpp/web/protocol/http/Http.hpp>
 
 #include <thread>
+#include <video/source/source.hpp>
 
 using namespace oatpp::web::mime::multipart;
 
 class MPStreamer : public Multipart {
 public:
-  MPStreamer()
-    : Multipart(generateRandomBoundary())
-  {}
+    MPStreamer(std::shared_ptr<Source>& source)
+        : Multipart(generateRandomBoundary()), source(source)
+    {}
 
     std::shared_ptr<Part> readNextPart(oatpp::async::Action& action);
     void writeNextPart(const std::shared_ptr<Part>& part, oatpp::async::Action& action) override;
+
+private:
+    std::shared_ptr<Source> source;
 };

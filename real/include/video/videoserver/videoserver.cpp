@@ -21,10 +21,6 @@ GMainLoop *Videoserver::getGSTMainLoop() const {
     return mainLoop;
 }
 
-std::vector<MediaUnit> Videoserver::getGSTPipelines() const {
-    return pipelines;
-}
-
 Videoserver::~Videoserver() {
     g_main_loop_quit(mainLoop);
     g_main_loop_unref(mainLoop);

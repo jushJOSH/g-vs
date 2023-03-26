@@ -30,7 +30,7 @@ protected:
 
 // Endpoints
 public:
-    ENDPOINT("GET", "/live", getLive, REQUEST(std::shared_ptr<IncomingRequest>, request));
+    ENDPOINT("GET", "/live", getLive);
 };
 
 #include OATPP_CODEGEN_END(ApiController) 

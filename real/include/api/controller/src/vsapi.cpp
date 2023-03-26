@@ -1,12 +1,14 @@
 #include <api/controller/vsapi.hpp>
-
-#include <gst/gst.h>
-#include <gst/app/app.h>
+#include <video/source/source.hpp>
 
 #include <oatpp/web/protocol/http/outgoing/MultipartBody.hpp>
 
-VSTypes::OatResponse VsapiController::getLive(const VSTypes::OatRequest &request) {
-    auto multipart = std::make_shared<MPStreamer>();
+VSTypes::OatResponse VsapiController::getLive() {
+    auto newSource = std::make_shared<Source>();
+    auto stateResult = newSource->setState();
+    g_print("Status %d\n", stateResult);
+
+    auto multipart = std::make_shared<MPStreamer>(newSource);
     auto body = std::make_shared<oatpp::web::protocol::http::outgoing::MultipartBody>(
         multipart,
         "multipart/x-mixed-replace",

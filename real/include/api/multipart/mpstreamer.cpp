@@ -1,13 +1,26 @@
 #include <api/multipart/mpstreamer.hpp>
 
 std::shared_ptr<Part> MPStreamer::readNextPart(oatpp::async::Action& action) {
-    std::this_thread::sleep_for(std::chrono::seconds(1)); // For Simple-API you may sleep just like that
-    
-    oatpp::String frameData = "<frame-binary-jpeg-data>"; // frame data. One jpeg image.
-    
+    Sample sample(nullptr);
+    try {
+        const auto &[alreadyUsed, _sample] = source->getSample();
+        sample=_sample;
+    } catch (const std::exception& e) {
+        OATPP_LOGD("MPStreamer", "No samples present for %s", boost::uuids::to_string(source->getUUID()).c_str());
+        return nullptr;
+    }
+    auto buffer = gst_sample_get_buffer(sample);
+    GstMapInfo bufferMap;
+    bool success = gst_buffer_map(buffer, &bufferMap, GST_MAP_READ);
+    if (!success) {
+        OATPP_LOGE("MPStreamer", "Error getting buffer map from sample");
+        return nullptr;
+    }
+
+    std::string data = (const char*)bufferMap.data;
     auto part = std::make_shared<Part>();
     part->putHeader(oatpp::web::protocol::http::Header::CONTENT_TYPE, "image/jpeg");
-    part->setPayload(std::make_shared<oatpp::data::resource::InMemoryData>(frameData));
+    part->setPayload(std::make_shared<oatpp::data::resource::InMemoryData>(data));
 
     return part;
 }
