@@ -3,8 +3,9 @@
 #include <utility>
 
 Sample::Sample(GstSample* sample) 
-:   sample(std::move(sample))
-{}
+{
+    setSample(sample);
+}
 
 Sample::~Sample() {
     gst_sample_unref(sample);
@@ -19,5 +20,6 @@ Sample::operator GstSample*() const {
 }
 
 void Sample::setSample(GstSample* sample) {
-    this->sample = std::move(sample);
+    this->sample = gst_sample_copy(sample);
+    gst_sample_unref(sample);
 }

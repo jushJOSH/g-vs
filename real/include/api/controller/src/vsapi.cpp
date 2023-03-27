@@ -11,7 +11,7 @@ VSTypes::OatResponse VsapiController::getLive() {
     auto multipart = std::make_shared<MPStreamer>(newSource);
     auto body = std::make_shared<oatpp::web::protocol::http::outgoing::MultipartBody>(
         multipart,
-        "multipart/x-mixed-replace",
+        "multipart/mixed",
         true
     );
 
