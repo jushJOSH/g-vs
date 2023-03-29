@@ -26,20 +26,23 @@ private:
         GstElement* muxer;
     };
 
+    struct CallbackArg {
+        std::mutex mutex;
+        std::shared_ptr<boost::circular_buffer<std::shared_ptr<Sample>>> samples;
+    };
+
 public:
     Source();
     ~Source();
 
     GstStateChangeReturn setState(GstState state = GST_STATE_PLAYING); 
-    boost::uuids::uuid getUUID() const;
-    std::shared_ptr<Sample> getSample() const;
+    std::shared_ptr<Sample> getSample();
     void waitSample() const;
 
 private:
-    std::shared_ptr<boost::uuids::uuid> uuid;
+    std::shared_ptr<std::string> uuid;
     PipeElements sourceElements;
-    
-    static std::mutex mutex;
-    static std::unordered_map<std::string, boost::circular_buffer<std::shared_ptr<Sample>>> sampleCloset;
+    std::shared_ptr<CallbackArg> arg;
+
     static GstFlowReturn on_new_sample(GstElement* appsink, gpointer data);
 };
