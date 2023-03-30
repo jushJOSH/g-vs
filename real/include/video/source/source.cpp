@@ -15,30 +15,37 @@ GstFlowReturn Source::on_new_sample(GstElement* appsink, gpointer data)  {
 }
 
 Source::Source() 
-:   uuid(std::make_shared<std::string>(boost::uuids::to_string(boost::uuids::random_generator_mt19937()()))),
+:   uuid(boost::uuids::to_string(boost::uuids::random_generator_mt19937()())),
     arg(std::make_shared<CallbackArg>())
 {   
-    g_print("Source created %s\n", (*uuid).c_str());
+    g_print("Test source created %s\n", uuid.c_str());
 
     arg->samples = std::make_shared<boost::circular_buffer<std::shared_ptr<Sample>>>(10);
 
-    sourceElements.sink = gst_element_factory_make("appsink", "sink");
+    sourceElements.appsink = gst_element_factory_make("appsink", "sink");
     sourceElements.muxer = gst_element_factory_make("multipartmux", "muxer");
     sourceElements.source = gst_element_factory_make("videotestsrc", "src");
     sourceElements.encoder = gst_element_factory_make("x264enc", "encoder");
     sourceElements.pipeline = gst_pipeline_new("pipeline");
     sourceElements.converter = gst_element_factory_make("videoconvert", "converter");
 
-    gst_bin_add_many(GST_BIN(sourceElements.pipeline), sourceElements.source, sourceElements.encoder, sourceElements.converter, sourceElements.muxer, sourceElements.sink, NULL);
-    g_object_set(G_OBJECT(sourceElements.sink), "emit-signals", TRUE, NULL);
-    g_signal_connect(sourceElements.sink, "new-sample", G_CALLBACK(on_new_sample), (gpointer*)arg.get());
+    gst_bin_add_many(GST_BIN(sourceElements.pipeline), sourceElements.source, sourceElements.encoder, sourceElements.converter, sourceElements.muxer, sourceElements.appsink, NULL);
+    g_object_set(G_OBJECT(sourceElements.appsink), "emit-signals", TRUE, NULL);
+    g_signal_connect(sourceElements.appsink, "new-sample", G_CALLBACK(on_new_sample), (gpointer*)arg.get());
 
     /* Установка связей между элементами */
-    auto isLinkedOk = gst_element_link_many(sourceElements.source, sourceElements.converter, sourceElements.encoder, sourceElements.muxer, sourceElements.sink, NULL);
+    auto isLinkedOk = gst_element_link_many(sourceElements.source, sourceElements.converter, sourceElements.encoder, sourceElements.muxer, sourceElements.appsink, NULL);
     if (!isLinkedOk)
     {
         g_print("Some shit lets go again");
     }
+}
+
+Source::Source(const std::string& name)
+:   uuid(name),
+    arg(std::make_shared<CallbackArg>())
+{
+    arg->samples = std::make_shared<boost::circular_buffer<std::shared_ptr<Sample>>>(10);
 }
 
 GstStateChangeReturn Source::setState(GstState state) {
@@ -46,7 +53,7 @@ GstStateChangeReturn Source::setState(GstState state) {
 }
 
 Source::~Source() {
-    g_print("Source deleted %s\n", (*uuid).c_str());
+    g_print("Source deleted %s\n", uuid.c_str());
 
     /* Остановка пайплайна и освобождение ресурсов */
     gst_element_set_state(sourceElements.pipeline, GST_STATE_NULL);

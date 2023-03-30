@@ -11,6 +11,12 @@
 
 class Videoserver {
 public:
+// Hardware accelerator
+enum class Accelerator {
+    AMD, NVIDIA, CPU
+};
+
+public:
 /// @brief Videoserver HTTP constructor
 /// @param host Hostname to bind
 /// @param port Port to bind

@@ -9,6 +9,7 @@
 #include <mutex>
 
 #include <video/sample/sample.hpp>
+#include <video/videoserver/videoserver.hpp>
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/random_generator.hpp>
@@ -16,13 +17,15 @@
 #include <boost/circular_buffer.hpp>
 
 class Source {
-private:
+protected: 
     struct PipeElements {
         GstElement* pipeline;
         GstElement* source;
+        GstElement* tee;
         GstElement* converter;
         GstElement* encoder;
-        GstElement* sink;
+        GstElement* appsink;
+        GstElement* filesink;
         GstElement* muxer;
     };
 
@@ -32,15 +35,18 @@ private:
     };
 
 public:
+    // Test consturctor for source
     Source();
+    Source(const std::string &name);
+
     ~Source();
 
     GstStateChangeReturn setState(GstState state = GST_STATE_PLAYING); 
     std::shared_ptr<Sample> getSample();
     void waitSample() const;
 
-private:
-    std::shared_ptr<std::string> uuid;
+protected:
+    std::string uuid;
     PipeElements sourceElements;
     std::shared_ptr<CallbackArg> arg;
 
