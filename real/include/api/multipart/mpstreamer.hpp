@@ -13,7 +13,7 @@ using namespace oatpp::web::mime::multipart;
 class MPStreamer : public Multipart {
 public:
     MPStreamer(std::shared_ptr<Source>& source)
-        : Multipart(generateRandomBoundary()), source(source)
+    :   Multipart(generateRandomBoundary()), source(source)
     {}
 
     std::shared_ptr<Part> readNextPart(oatpp::async::Action& action);

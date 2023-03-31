@@ -1,5 +1,7 @@
 #include <video/videoserver/videoserver.hpp>
 
+Videoserver::Accelerator Videoserver::accelerator = Videoserver::Accelerator::CPU;
+
 Videoserver::Videoserver(const std::string &host, int port, bool nonblocking, bool multithreaded, bool startLoop) 
 : 
     // HTTP Params

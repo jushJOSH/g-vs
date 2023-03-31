@@ -58,6 +58,8 @@ void from_json(const nlohmann::json& object);
 /// @param object JSON object
 void to_json(nlohmann::json& object) const;
 
+static Accelerator accelerator;
+
 private:
 // --- GStreamer params ---
 GMainLoop *mainLoop;

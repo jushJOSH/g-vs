@@ -22,30 +22,18 @@ Source::Source()
 
     arg->samples = std::make_shared<boost::circular_buffer<std::shared_ptr<Sample>>>(10);
 
-    sourceElements.appsink = gst_element_factory_make("appsink", "sink");
-    sourceElements.muxer = gst_element_factory_make("multipartmux", "muxer");
+    sourceElements.tee = gst_element_factory_make("tee", "splitter");
     sourceElements.source = gst_element_factory_make("videotestsrc", "src");
-    sourceElements.encoder = gst_element_factory_make("x264enc", "encoder");
+    sourceElements.decoder = gst_element_factory_make("decodebin", "decoder");
     sourceElements.pipeline = gst_pipeline_new("pipeline");
     sourceElements.converter = gst_element_factory_make("videoconvert", "converter");
 
-    gst_bin_add_many(GST_BIN(sourceElements.pipeline), sourceElements.source, sourceElements.encoder, sourceElements.converter, sourceElements.muxer, sourceElements.appsink, NULL);
-    g_object_set(G_OBJECT(sourceElements.appsink), "emit-signals", TRUE, NULL);
-    g_signal_connect(sourceElements.appsink, "new-sample", G_CALLBACK(on_new_sample), (gpointer*)arg.get());
-
     /* Установка связей между элементами */
-    auto isLinkedOk = gst_element_link_many(sourceElements.source, sourceElements.converter, sourceElements.encoder, sourceElements.muxer, sourceElements.appsink, NULL);
+    auto isLinkedOk = gst_element_link_many(sourceElements.source, sourceElements.decoder, sourceElements.converter, sourceElements.tee, NULL);
     if (!isLinkedOk)
     {
         g_print("Some shit lets go again");
     }
-}
-
-Source::Source(const std::string& name)
-:   uuid(name),
-    arg(std::make_shared<CallbackArg>())
-{
-    arg->samples = std::make_shared<boost::circular_buffer<std::shared_ptr<Sample>>>(10);
 }
 
 GstStateChangeReturn Source::setState(GstState state) {
@@ -71,4 +59,16 @@ std::shared_ptr<Sample> Source::getSample() {
 
 void Source::waitSample() const {
     while (!arg->samples->size());
+}
+
+bool Source::addBranch(const std::string &name, PipeBranch& branch) {
+    bool isLinked = gst_element_link(sourceElements.tee, branch.queue);
+    if (isLinked) sourceElements.branches[name] = std::make_shared<PipeBranch>(branch);
+
+    return isLinked;
+}
+
+bool Source::addTestBranch() {
+    PipeBranch branch;
+    branch.queue = 
 }
