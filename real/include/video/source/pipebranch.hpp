@@ -8,16 +8,19 @@
 class PipeBranch {
 public:
     PipeBranch(const std::string &sink, const SourceConfigDto &config);
-
+    
     GstElement *getQueue();
     GstElement *getSink();
 
-    void setCallback();
-    void setPlay();
+    void setCallback(GCallback callback, gpointer* callbackArg);
     bool loadBin(GstBin* bin);
 
+    void updateEncoder(int bitrate);
+    void updateRate(int fps);
+    void updateResolution(int width, int heigth);
+
 private:
-    GstElement* createEncoder(Videoserver::Accelerator accelerator);
+    GstElement* createEncoder(int accelerator);
 
 private:
     std::string uuid;

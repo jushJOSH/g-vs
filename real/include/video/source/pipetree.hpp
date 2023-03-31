@@ -3,19 +3,24 @@
 #include <gst/gst.h>
 #include <gst/app/app.h>
 
+#include <unordered_map>
+
 #include <video/source/pipebranch.hpp>
+
+class PipeBranch;
 
 class PipeTree {
 public:
     PipeTree();
+    PipeTree(const std::string &source);
     ~PipeTree();
 
     bool setSource(const std::string& source);
-    bool addBranch(const std::string &name, PipeBranch& branch);
+    bool addBranch(const std::string &name, std::shared_ptr<PipeBranch> branch);
     void removeBranch(const std::string &name);
     GstElement* getSink(const std::string &name);
     
-    void setPlay();
+    GstStateChangeReturn setState(GstState state = GST_STATE_PLAYING); 
 
 private:
     std::string uuid;

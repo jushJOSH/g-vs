@@ -27,3 +27,10 @@ Videoserver::~Videoserver() {
     g_main_loop_quit(mainLoop);
     g_main_loop_unref(mainLoop);
 }
+
+std::shared_ptr<Source> Videoserver::openSource(const std::string& source) {
+    if (!aliveSources.contains(source)) 
+        aliveSources[source] = std::make_shared<Source>(source);
+        
+    return aliveSources.at(source);
+}

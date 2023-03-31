@@ -1,8 +1,8 @@
 #pragma once
 
 #include <gst/gst.h>
-#include <vector>
-#include <video/pipeline/pipeline.hpp>
+#include <unordered_map>
+#include <video/source/source.hpp>
 #include <nlohmann/json.hpp>
 
 #include <api/controller/vsapi.hpp>
@@ -30,18 +30,7 @@ void runMainLoop();
 /// @brief Stops glib main loop
 void stopMainLoop();
 
-// /// @brief Run http server sync mode.
-// void httpSync();
-
-// /// @brief Run http server async mode.
-// /// @return std::future of running instance
-// std::future<void> httpAsync();
-
-// // ----- GET methods ------
-
-// /// @brief Allows to get current HTTP Crow app instance
-// /// @return Crow app instance
-// crow::App<AuthMiddleware> &getHTTPApp();
+std::shared_ptr<Source> openSource(const std::string& source);
 
 /// @brief Allows to get current GST main loop
 /// @return  GMainLoop* GST Main loop
@@ -63,6 +52,7 @@ static Accelerator accelerator;
 private:
 // --- GStreamer params ---
 GMainLoop *mainLoop;
+std::unordered_map<std::string, std::shared_ptr<Source>> aliveSources;
 
 // --- HTTP server params
 std::string host;

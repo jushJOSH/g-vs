@@ -15,21 +15,36 @@ PipeTree::PipeTree()
     converter(gst_element_factory_make("videoconvert", str(format("%1%_videoconvert") % uuid).c_str())),
     tee(gst_element_factory_make("tee", str(format("%1%_tee") % uuid).c_str()))
 {
-    g_print("Created pipeline %s", uuid.c_str());
+    g_print("Created tree %s", uuid.c_str());
     
     // Add to pipeline
     gst_bin_add_many(GST_BIN(pipeline), decoder, converter, tee, NULL);
-    bool isLinked = gst_element_link_many(decoder, converter, tee);
+    bool isLinked = gst_element_link_many(decoder, converter, tee, NULL);
 
     // If linked failed throw something funny
-    if (!isLinked) throw std::runtime_error("Error creating PipeTree object: Link failed!");
+    if (!isLinked) 
+        throw std::runtime_error("Error creating PipeTree object: Link failed!");
 }
 
-bool PipeTree::addBranch(const std::string &name, PipeBranch& branch) {
-    branch.loadBin(GST_BIN(pipeline));
+PipeTree::PipeTree(const std::string& source)
+:   PipeTree()
+{
+    if (!setSource(source)) 
+        throw std::runtime_error("Error creating PipeTree object: Link failed on setting source");
+}
+
+PipeTree::~PipeTree() {
+    g_print("Deleted tree %s", uuid.c_str());
+
+    gst_element_set_state(pipeline, GST_STATE_NULL);
+    gst_object_unref(pipeline);
+}
+
+bool PipeTree::addBranch(const std::string &name, std::shared_ptr<PipeBranch> branch) {
+    branch->loadBin(GST_BIN(pipeline));
     
-    bool isLinked = gst_element_link(tee, branch.getQueue());
-    if (isLinked) branches[name] = std::make_shared<PipeBranch>(branch);
+    bool isLinked = gst_element_link(tee, branch->getQueue());
+    if (isLinked) branches[name] = branch;
 
     return isLinked;
 }
@@ -47,4 +62,8 @@ GstElement* PipeTree::getSink(const std::string &name) {
 bool PipeTree::setSource(const std::string &source) {
     this->source = gst_element_factory_make(source.c_str(), str(format("%1%_source") % uuid).c_str());
     return gst_element_link(this->source, decoder);
+}
+
+GstStateChangeReturn PipeTree::setState(GstState state) {
+    return gst_element_set_state(pipeline, state);
 }

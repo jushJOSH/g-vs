@@ -9,13 +9,14 @@
 #include <mutex>
 
 #include <video/sample/sample.hpp>
-#include <video/videoserver/videoserver.hpp>
 #include <video/source/pipetree.hpp>
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/circular_buffer.hpp>
+
+class PipeTree;
 
 class Source {
 protected: 
@@ -27,16 +28,14 @@ protected:
 public:
     // Test consturctor for source
     Source();
+    Source(const std::string& source);
     ~Source();
 
-    GstStateChangeReturn setState(GstState state = GST_STATE_PLAYING); 
     std::shared_ptr<Sample> getSample();
+    GstStateChangeReturn setState(GstState state = GST_STATE_PLAYING);
 
-    /// @brief Adds branch to source tree
-    /// @param name name of branch. Uuid for example
-    /// @param branch connected and configured branch to insert
-    /// @return true if connected successfully
-    void addTestBranch();
+    bool addBranch(const std::string &name, std::shared_ptr<PipeBranch> branch);
+    //bool Source::addTestBranch();
     
     void waitSample() const;
 
