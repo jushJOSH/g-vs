@@ -41,7 +41,7 @@ public:
 
 protected:
     std::string uuid;
-    PipeTree sourceElements;
+    std::shared_ptr<PipeTree> sourceElements;
     std::shared_ptr<CallbackArg> arg;
 
     static GstFlowReturn on_new_sample(GstElement* appsink, gpointer data);

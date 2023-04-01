@@ -1,52 +1,19 @@
-#include <api/controller/auth.hpp>
-#include <api/controller/users.hpp>
-#include <api/controller/vsapi.hpp>
-#include <api/handler/error.hpp>
-#include <api/component/app.hpp>
-#include <api/component/database.hpp>
-#include <api/component/service.hpp>
+#include <video/source/source.hpp>
 
-#include <oatpp/network/Server.hpp>
+int main(int argc, char *argv[]) {
+    gst_init(&argc, &argv);
 
-#include <thread>
+    SourceConfigDto config;
+    config.archive_path = "/home/egor/";
 
-void run(const oatpp::base::CommandLineArguments& args) {
-    std::thread serverThread([args]{
-        AppComponent appComponent(args);
-        ServiceComponent serviceComponent;
-        DatabaseComponent databaseComponent;
+    Source testSource("rtsp://193.19.103.188:1935/live/Pl_Lunincev.stream");
+    auto screenshot = std::make_shared<ScreenshotBranch>(config);
+    auto archive = std::make_shared<ArchiveBranch>(config);
+    auto stream = std::make_shared<StreamBranch>(config);
 
-        /* create ApiControllers and add endpoints to router */
-        auto router = serviceComponent.httpRouter.getObject();
-        router->addController(AuthController::createShared());
-        router->addController(UserController::createShared());
-        router->addController(VsapiController::createShared());
+    testSource.addBranch("screenshot", screenshot);
+    testSource.addBranch("archive", archive);
+    testSource.addBranch("stream", stream);
 
-        /* create server */
-
-        oatpp::network::Server server(serviceComponent.serverConnectionProvider.getObject(),
-                                        serviceComponent.serverConnectionHandler.getObject());
-
-        OATPP_LOGD("Server", "Running on port %s...", serviceComponent.serverConnectionProvider.getObject()->getProperty("port").toString()->c_str());
-
-        server.run();
-    });
-
-    serverThread.detach();
-}
-
-int main(int argc, const char * argv[]) {
-    // TEMP
-    /* Создание и запуск главного цикла GStreamer */
-    /* Initialize GStreamer */
-    gst_init(nullptr, NULL);
-    //g_main_loop_run(loop);
-
-    oatpp::base::Environment::init();
-    run(oatpp::base::CommandLineArguments(argc, argv));
-    auto loop = g_main_loop_new(NULL, false);
-    g_main_loop_run(loop);
-    oatpp::base::Environment::destroy();
-
-    return 0;
+    testSource.setState();
 }

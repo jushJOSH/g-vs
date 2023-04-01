@@ -8,35 +8,45 @@
 
 #include <oatpp/network/Server.hpp>
 
-#include <iostream>
+#include <thread>
 
 void run(const oatpp::base::CommandLineArguments& args) {
+    std::thread serverThread([args]{
+        AppComponent appComponent(args);
+        ServiceComponent serviceComponent;
+        DatabaseComponent databaseComponent;
 
-  AppComponent appComponent(args);
-  ServiceComponent serviceComponent;
-  DatabaseComponent databaseComponent;
+        /* create ApiControllers and add endpoints to router */
+        auto router = serviceComponent.httpRouter.getObject();
+        router->addController(AuthController::createShared());
+        router->addController(UserController::createShared());
+        router->addController(VsapiController::createShared());
 
-  /* create ApiControllers and add endpoints to router */
-  auto router = serviceComponent.httpRouter.getObject();
-  router->addController(AuthController::createShared());
-  router->addController(UserController::createShared());
-  router->addController(VsapiController::createShared());
+        /* create server */
 
-  /* create server */
+        oatpp::network::Server server(serviceComponent.serverConnectionProvider.getObject(),
+                                        serviceComponent.serverConnectionHandler.getObject());
 
-  oatpp::network::Server server(serviceComponent.serverConnectionProvider.getObject(),
-                                serviceComponent.serverConnectionHandler.getObject());
+        OATPP_LOGD("Server", "Running on port %s...", serviceComponent.serverConnectionProvider.getObject()->getProperty("port").toString()->c_str());
 
-  OATPP_LOGD("Server", "Running on port %s...", serviceComponent.serverConnectionProvider.getObject()->getProperty("port").toString()->c_str());
+        server.run();
+    });
 
-  server.run();
-
+    serverThread.detach();
 }
 
 int main(int argc, const char * argv[]) {
-  oatpp::base::Environment::init();
-  run(oatpp::base::CommandLineArguments(argc, argv));
-  oatpp::base::Environment::destroy();
+    // TEMP
+    /* Создание и запуск главного цикла GStreamer */
+    /* Initialize GStreamer */
+    gst_init(nullptr, NULL);
+    //g_main_loop_run(loop);
 
-  return 0;
+    oatpp::base::Environment::init();
+    run(oatpp::base::CommandLineArguments(argc, argv));
+    auto loop = g_main_loop_new(NULL, false);
+    g_main_loop_run(loop);
+    oatpp::base::Environment::destroy();
+
+    return 0;
 }
