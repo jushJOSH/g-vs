@@ -33,8 +33,6 @@ private:
 
     GstElement* pipeline;
     GstElement* source;
-    GstElement* decoder;
-    GstElement* converter;
     GstElement* tee;
 
     // Map of 'name' of branch and GstPad of tee for it

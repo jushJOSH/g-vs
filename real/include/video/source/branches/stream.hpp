@@ -8,6 +8,8 @@ public:
     ~StreamBranch();
 
     void updateEncoder(int bitrate);
+    void updateFps(int fps);
+    void updateResolution();
 
 protected:
     GstElement* createEncoder(int accelerator);

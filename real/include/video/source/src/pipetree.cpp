@@ -49,14 +49,12 @@ GstPadProbeReturn PipeTree::padProbeCallback(GstPad* pad, GstPadProbeInfo *info,
 PipeTree::PipeTree() 
 :   uuid(boost::uuids::to_string(boost::uuids::random_generator_mt19937()())),
     pipeline(gst_pipeline_new(uuid.c_str())),
-    decoder(gst_element_factory_make("decodebin", str(format("%1%_decodebin") % uuid).c_str())),
-    converter(gst_element_factory_make("videoconvert", str(format("%1%_videoconvert") % uuid).c_str())),
     tee(gst_element_factory_make("tee", str(format("%1%_tee") % uuid).c_str()))
 {
     g_print("Created tree %s\n", uuid.c_str());
     
     // Add to pipeline
-    gst_bin_add_many(GST_BIN(pipeline), decoder, converter, tee, NULL);
+    gst_bin_add_many(GST_BIN(pipeline), tee, NULL);
 }
 
 PipeTree::PipeTree(const std::string& source)
@@ -119,10 +117,7 @@ bool PipeTree::setSource(const std::string &source) {
     gst_bin_add(GST_BIN(pipeline), this->source);
     g_object_set(this->source, "location", source.c_str(), NULL);
 
-    return 
-        gst_element_link(this->source, decoder) &&
-        gst_element_link(decoder, converter) &&
-        gst_element_link(converter, tee);
+    return gst_element_link(this->source, tee);
 }
 
 GstStateChangeReturn PipeTree::setState(GstState state) {

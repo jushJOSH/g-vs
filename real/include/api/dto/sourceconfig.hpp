@@ -8,12 +8,21 @@
 class SourceConfigDto : public oatpp::DTO {
     DTO_INIT(SourceConfigDto, DTO)
 
-    DTO_FIELD(Int32, fps) = 15;
-    DTO_FIELD(String, resolution) = "1280x720";
-    DTO_FIELD(String, encoding) = "h264";
-    DTO_FIELD(Int32, bitrate) = 2000;
+    // Source settings
     DTO_FIELD(String, cache_mode) = "stream";
     DTO_FIELD(String, archive_path);
+
+    // Videoline settings
+    DTO_FIELD(Int32, fps) = 15;
+    DTO_FIELD(String, resolution) = "1280x720";
+    DTO_FIELD(String, videoencoding) = "h264";
+    DTO_FIELD(Int32, bitrate) = 2000;
+
+    // Audioline settings
+    DTO_FIELD(Boolean, mute) = false;
+    DTO_FIELD(Float32, quality) = 0.3;
+    DTO_FIELD(Float32, volume) = 0.8;
+    DTO_FIELD(String, audioencoding) = "vorbis";
 };
 
 #include OATPP_CODEGEN_END(DTO)
