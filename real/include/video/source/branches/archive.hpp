@@ -7,14 +7,19 @@ public:
     ArchiveBranch(const SourceConfigDto& config);
     ~ArchiveBranch();
 
-    bool loadBin(GstBin* bin) override;
-    void unloadBin() override;
+    bool loadBin(GstBin* bin);
+    void unloadBin();
 
-// Got confused with inheritance. Mb fixable with it but idc
     void updateEncoder(int bitrate);
-protected:
-    GstElement* createEncoder(int accelerator);
+    void updateResolution(const std::string resolution);
+    void updateFrameRate(int fps);
+    void updateAudioQuality(double quality);
+    void updateAudioVolume(double volume);
+    void mute(bool state);
+
+    GstStateChangeReturn  setState(GstState state = GST_STATE_PLAYING);
 
 private:
     GstElement* muxer;
+    GstElement* sink;
 };
