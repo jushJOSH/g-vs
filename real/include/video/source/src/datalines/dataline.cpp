@@ -5,7 +5,7 @@
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/format.hpp>
-#include <algorithm/string.hpp>
+#include <boost/algorithm/string.hpp>
 
 using boost::format;
 using boost::str;
@@ -17,15 +17,6 @@ DataLine::DataLine(LineType type, const std::string &encoder)
     type(type)
 {
     g_print("Created dataline %s\n", uuid.c_str());
-}
-
-DataLine::DataLine(
-    GstBin* bin,
-    LineType type, 
-    const std::string &encoder)
-:   DataLine(type, encoder)
-{
-    loadBin(bin);
 }
 
 bool DataLine::attachToPipeline(GstElement* before) {
@@ -55,4 +46,8 @@ GstElement* DataLine::getQueue() const {
 
 std::string DataLine::getUUID() const {
     return this->uuid;
+}
+
+DataLine::LineType DataLine::getType() const {
+    return type;
 }

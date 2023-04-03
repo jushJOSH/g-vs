@@ -2,14 +2,11 @@
 
 #include <atomic>
 
-GstFlowReturn Source::on_new_sample(GstElement* appsink, gpointer data)  {
+GstFlowReturn Source::onNewSample(GstElement* appsink, CallbackArg *data)  {
     GstSample *sample = gst_app_sink_pull_sample(GST_APP_SINK(appsink));
 
-    // Setting new sample to selected uuid
-    auto arg = (Source::CallbackArg*)data;
-
-    std::lock_guard<std::mutex> locker(arg->mutex);
-    arg->samples->push_back(std::make_shared<Sample>(sample));
+    std::lock_guard<std::mutex> locker(data->mutex);
+    data->samples->push_back(std::make_shared<Sample>(sample));
 
     return GST_FLOW_OK;
 }

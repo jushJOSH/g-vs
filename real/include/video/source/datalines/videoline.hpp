@@ -22,21 +22,19 @@ public:
 public:
     VideoLine(const std::string &encoder, Resolution resolution, int fps, int bitrate);
     VideoLine(GstBin *bin, const std::string &encoder, Resolution resolution, int fps, int bitrate);
-    ~VideoLine();
+    //~VideoLine();
 
     void loadBin(GstBin *bin);
     void unloadBin();
 
-    void updateFrameRate(int fps);
-    void updateResolution(Resolution resolution);
-    void updateBitrate(int bitrate);
-
     GstElement *getEncoder() const;
+    GstElement *getScale() const;
+    GstElement *getRate() const;
 
     static Resolution strToResolution(const std::string &resolution_s, char separator = 'x');
 
 private:
-    GstElement* createEncoder(int accelerator);
+    GstElement* createEncoder();
 
 private:
     std::string uuid;

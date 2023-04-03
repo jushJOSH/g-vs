@@ -44,7 +44,50 @@ GstPadProbeReturn PipeTree::padProbeCallback(GstPad* pad, GstPadProbeInfo *info,
     gst_object_unref (sink);
 
     return GST_PAD_PROBE_OK;
-}   
+}
+
+void PipeTree::onNewRtspPad(GstElement *src, GstPad *newPad, GstElement* tee) {
+    GstPad *sink_pad = gst_element_get_static_pad(tee, "sink");
+    
+	GstCaps *new_pad_caps = NULL;
+	GstStructure *new_pad_struct = NULL;
+	const gchar *new_pad_type = NULL;
+
+    /* If our converter is already linked, we have nothing to do here */
+	if (gst_pad_is_linked(sink_pad)) {
+		g_print("Sink pad from %s already linked. Ignoring.\n", GST_ELEMENT_NAME(src));
+		goto exit;
+	}
+
+	g_print("Received new pad '%s' from '%s':\n", GST_PAD_NAME(newPad), GST_ELEMENT_NAME(src));
+
+	/* Check the new pad's name */
+	if (!g_str_has_prefix(GST_PAD_NAME(newPad), "recv_rtp_src_")) {
+		g_print("It is not the right pad. Need recv_rtp_src_. Ignoring.\n");
+		goto exit;
+	}
+
+	/* Check the new pad's type */
+	new_pad_caps = gst_pad_query_caps(newPad, NULL);
+	new_pad_struct = gst_caps_get_structure(new_pad_caps, 0);
+	new_pad_type = gst_structure_get_name(new_pad_struct);
+
+	/* Attempt the link */
+	if (!gst_pad_link(newPad, sink_pad)) {
+		g_print("Type is '%s' but link failed.\n", new_pad_type);
+	}
+	else {
+		g_print("Link succeeded (type '%s').\n", new_pad_type);
+	}
+
+exit:
+	/* Unreference the new pad's caps, if we got them */
+	if (new_pad_caps != NULL)
+		gst_caps_unref(new_pad_caps);
+
+	/* Unreference the sink pad */
+	gst_object_unref(sink_pad);
+}
 
 PipeTree::PipeTree() 
 :   uuid(boost::uuids::to_string(boost::uuids::random_generator_mt19937()())),
@@ -60,8 +103,7 @@ PipeTree::PipeTree()
 PipeTree::PipeTree(const std::string& source)
 :   PipeTree()
 {
-    if (!setSource(source)) 
-        throw std::runtime_error("Error creating PipeTree object: Link failed on setting source");
+    setSource(source);
 }
 
 PipeTree::~PipeTree() {
@@ -84,8 +126,6 @@ GstPadLinkReturn PipeTree::addBranch(const std::string &name, std::shared_ptr<Pi
         teePads[name] = newSrcPad;
     }
 
-    gst_element_set_state(branch->getQueue(), GST_STATE_PLAYING);
-
     return linkResult;
 }
 
@@ -103,21 +143,19 @@ GstElement* PipeTree::getSink(const std::string &name) {
         : nullptr;
 }
 
-bool PipeTree::setSource(const std::string &source) {
+void PipeTree::setSource(const std::string &source) {
     std::regex protocolRegex("(\\w+):/");
     std::smatch match;
-    if (!std::regex_search(source, match, protocolRegex)) return false;
+    if (!std::regex_search(source, match, protocolRegex)) return;
     
     std::string protocol = match.str(1);
     std::string sourceType = str(boost::format("%1%src") % protocol);
-    
-    setState(GST_STATE_NULL);
 
     this->source = gst_element_factory_make(sourceType.c_str(), str(format("%1%_source") % uuid).c_str());
-    gst_bin_add(GST_BIN(pipeline), this->source);
+    gst_bin_add_many(GST_BIN(pipeline), this->source, this->tee, NULL);
     g_object_set(this->source, "location", source.c_str(), NULL);
 
-    return gst_element_link(this->source, tee);
+    g_signal_connect(this->source, "pad-added", G_CALLBACK(onNewRtspPad), tee);
 }
 
 GstStateChangeReturn PipeTree::setState(GstState state) {

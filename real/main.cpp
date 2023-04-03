@@ -16,4 +16,7 @@ int main(int argc, char *argv[]) {
     testSource.addBranch("stream", stream);
 
     testSource.setState();
+
+    auto loop = g_main_loop_new(NULL, false);
+    g_main_loop_run(loop);
 }

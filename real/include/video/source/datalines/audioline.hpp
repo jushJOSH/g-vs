@@ -18,11 +18,8 @@ public:
     void loadBin(GstBin *bin);
     void unloadBin();
 
-    void updateVolume(double volume);
-    void updateQuality(double quality);
-    void mute(bool state);
-
     GstElement *getEncoder() const;
+    GstElement *getVolume() const;
 
 private:
     GstElement* createEncoder();

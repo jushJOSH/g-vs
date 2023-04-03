@@ -5,7 +5,7 @@
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/format.hpp>
-#include <algorithm/string.hpp>
+#include <boost/algorithm/string.hpp>
 
 using boost::format;
 using boost::str;
@@ -19,7 +19,7 @@ VideoLine::VideoLine(
     videoconverter(gst_element_factory_make("videoconvert", str(format("%1%_videoconvert") % uuid).c_str())),
     videoscale(gst_element_factory_make("videoscale", str(format("%1%_videoscale") % uuid).c_str())),
     videorate(gst_element_factory_make("videorate", str(format("%1%_videorate") % uuid).c_str())),
-    videoencoder(createEncoder((int)Videoserver::accelerator))
+    videoencoder(createEncoder())
 {
     g_print("Created videoline %s\n", uuid.c_str());
 }
@@ -60,35 +60,9 @@ GstElement* VideoLine::getEncoder() const {
     return this->videoencoder;
 }
 
-void VideoLine::updateFrameRate(int fps) {
-    GstCaps* frame_caps = gst_caps_new_simple("video/x-raw",
-        "framerate", G_TYPE_INT, fps, 1,
-        NULL
-    );
-    g_object_set(videorate, "caps", frame_caps, NULL);
-}
-
-void VideoLine::updateResolution(Resolution resolution) {
-    GstCaps* scale_caps = gst_caps_new_simple("video/x-raw",
-        "width", G_TYPE_INT, resolution.width,
-        "height", G_TYPE_INT, resolution.height,
-        NULL
-    );
-    g_object_set(videoscale, "caps", scale_caps, NULL);
-}
-
-void VideoLine::updateBitrate(int bitrate) {
-    GstCaps* encoder_caps = gst_caps_new_simple(str(format("video/x-%1%") % encoder_s).c_str(),
-        "bitrate", G_TYPE_INT, bitrate,
-        NULL
-    );
-    g_object_set(videoencoder, "caps", encoder_caps, NULL);
-}
-
-GstElement* VideoLine::createEncoder(int accelerator) {
+GstElement* VideoLine::createEncoder() {
     std::string platform = "";
-    Videoserver::Accelerator v_accelerator = (Videoserver::Accelerator)accelerator;
-    switch (v_accelerator) {
+    switch (Videoserver::accelerator) {
         case Videoserver::Accelerator::AMD:
             platform = "amf";
         break;
@@ -108,10 +82,18 @@ GstElement* VideoLine::createEncoder(int accelerator) {
 VideoLine::Resolution VideoLine::strToResolution(const std::string &resolution_s, char separator) {
     VideoLine::Resolution resolution;
     std::vector<std::string> resolution_v;
-    boost::split(resolution_v, resolution_s, boost::is_any_of(separator));
+    boost::split(resolution_v, resolution_s, boost::is_any_of(std::string(1, separator)));
     
     resolution.width = std::stoi(resolution_v[0]);
     resolution.height = std::stoi(resolution_v[1]);
 
     return resolution;
+}
+
+GstElement* VideoLine::getRate() const {
+    return this->videorate;
+}
+
+GstElement* VideoLine::getScale() const {
+    return this->videoscale;
 }

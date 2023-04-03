@@ -39,10 +39,10 @@ public:
     
     void waitSample() const;
 
+    static GstFlowReturn onNewSample(GstElement* appsink, CallbackArg *data);
+
 protected:
     std::string uuid;
     std::shared_ptr<PipeTree> sourceElements;
     std::shared_ptr<CallbackArg> arg;
-
-    static GstFlowReturn on_new_sample(GstElement* appsink, gpointer data);
 };

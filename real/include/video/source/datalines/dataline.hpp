@@ -16,7 +16,6 @@ public:
 
 public:
     DataLine(LineType type, const std::string& encoder);
-    DataLine(GstBin *bin, LineType type, const std::string& encoder);
 
     virtual void loadBin(GstBin *bin) = 0;
     virtual void unloadBin() = 0;
@@ -28,6 +27,7 @@ public:
     GstElement *getQueue() const;
     virtual GstElement *getEncoder() const = 0;
     std::string getUUID() const;
+    LineType getType() const;
 
 protected:
     virtual GstElement* createEncoder() = 0;

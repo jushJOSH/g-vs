@@ -18,7 +18,7 @@ public:
     PipeTree(const std::string &source);
     ~PipeTree();
 
-    bool setSource(const std::string& source);
+    void setSource(const std::string& source);
     GstPadLinkReturn addBranch(const std::string &name, std::shared_ptr<PipeBranch> branch);
     void removeBranch(const std::string &name);
     GstElement* getSink(const std::string &name);
@@ -28,6 +28,7 @@ public:
 private:
     static GstPadProbeReturn padProbeCallback(GstPad* pad, GstPadProbeInfo *info, gpointer user_data);
     static GstPadProbeReturn eventProbeCallback(GstPad* pad, GstPadProbeInfo *info, gpointer user_data);
+    static void onNewRtspPad(GstElement *src, GstPad *newPad, GstElement* tee);
 
     std::string uuid;
 

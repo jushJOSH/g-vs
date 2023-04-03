@@ -62,14 +62,6 @@ GstElement* AudioLine::getEncoder() const {
     return this->audioencoder;
 }
 
-void AudioLine::updateVolume(double volume) {
-    g_object_set(this->volume, "volume", volume, NULL);
-}
-
-void AudioLine::updateQuality(double quality) {
-    g_object_set(audioconverter, "quality", quality, NULL);
-}
-
-void AudioLine::mute(bool state) {
-    g_object_set(this->volume, "mute", state, NULL);
+GstElement* AudioLine::getVolume() const {
+    return volume;
 }

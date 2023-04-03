@@ -5,12 +5,10 @@
 class StreamBranch : public PipeBranch { 
 public:
     StreamBranch(const SourceConfigDto &config);
-    ~StreamBranch();
+    //~StreamBranch();
 
-    void updateEncoder(int bitrate);
-    void updateFps(int fps);
-    void updateResolution();
+    void setCallback(GCallback callback, gpointer *callbackArg);
 
 protected:
-    GstElement* createEncoder(int accelerator);
+    void initPadEvent() override;    
 };

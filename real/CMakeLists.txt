@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(PkgConfig REQUIRED) 
 pkg_check_modules(GST REQUIRED gstreamer-1.0)
 pkg_check_modules(GLIB REQUIRED glib-2.0)
+pkg_check_modules(GRTSP REQUIRED gstreamer-rtsp-1.0)
 pkg_check_modules(GST_APP REQUIRED gstreamer-app-1.0)
 pkg_check_modules(JSON REQUIRED nlohmann_json)
 
