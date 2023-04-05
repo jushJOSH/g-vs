@@ -4,9 +4,9 @@
 
 class ArchiveBranch : public PipeBranch {
 public:
-    ArchiveBranch(const SourceConfigDto& config);
+    ArchiveBranch(const std::string &path);
     //~ArchiveBranch();
 
-protected:
-    void initPadEvent() override;    
+    bool loadBin(GstBin *bin);
+    void unloadBin();
 };

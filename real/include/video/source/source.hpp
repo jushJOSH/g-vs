@@ -29,10 +29,12 @@ public:
     // Test consturctor for source
     Source();
     Source(const std::string& source);
+    Source(const std::string& source, SourceConfigDto& config);
     ~Source();
 
     std::shared_ptr<Sample> getSample();
     GstStateChangeReturn setState(GstState state = GST_STATE_PLAYING);
+    void setConfig(SourceConfigDto& config);
 
     bool addBranch(const std::string &name, std::shared_ptr<PipeBranch> branch);
     //bool Source::addTestBranch();

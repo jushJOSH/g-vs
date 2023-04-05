@@ -4,12 +4,9 @@
 
 class ScreenshotBranch : public PipeBranch { 
 public:
-    ScreenshotBranch(const SourceConfigDto& config);
+    ScreenshotBranch(const std::string &screenPath);
     //~ScreenshotBranch();
 
-    bool loadBin(GstBin *bin) override;
-    void unloadBin() override;
-
-protected:
-    void initPadEvent() override;    
+    bool loadBin(GstBin *bin);
+    void unloadBin();
 };

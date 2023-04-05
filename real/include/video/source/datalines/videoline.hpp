@@ -37,11 +37,6 @@ private:
     GstElement* createEncoder();
 
 private:
-    std::string uuid;
-    std::string encoder_s;
-
-    GstBin *bin;
-    GstElement *queue;
     GstElement *videoconverter;
     GstElement *videoscale;
     GstElement *videorate;

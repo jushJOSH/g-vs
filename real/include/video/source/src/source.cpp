@@ -21,8 +21,14 @@ Source::Source()
 
 Source::Source(const std::string &source)
 :   Source()
-{
+{   
     sourceElements = std::make_shared<PipeTree>(source);
+}
+
+Source::Source(const std::string &source, SourceConfigDto& config)
+:   Source(source)
+{
+    sourceElements->setConfig(config);
 }
 
 GstStateChangeReturn Source::setState(GstState state) {
@@ -48,4 +54,8 @@ void Source::waitSample() const {
 
 bool Source::addBranch(const std::string &name, std::shared_ptr<PipeBranch> branch) {
     return sourceElements->addBranch(name, branch);
+}
+
+void Source::setConfig(SourceConfigDto& config) {
+    sourceElements->setConfig(config);
 }

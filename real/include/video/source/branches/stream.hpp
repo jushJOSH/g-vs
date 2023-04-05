@@ -4,11 +4,11 @@
 
 class StreamBranch : public PipeBranch { 
 public:
-    StreamBranch(const SourceConfigDto &config);
+    StreamBranch();
     //~StreamBranch();
 
-    void setCallback(GCallback callback, gpointer *callbackArg);
+    bool loadBin(GstBin *bin);
+    void unloadBin();
 
-protected:
-    void initPadEvent() override;    
+    void setCallback(GCallback callback, gpointer *callbackArg); 
 };

@@ -20,12 +20,14 @@ public:
     virtual void loadBin(GstBin *bin) = 0;
     virtual void unloadBin() = 0;
     bool attachToPipeline(GstElement *before);
-    bool attachToPipeline(GstPad *before);
+    GstPadLinkReturn attachToPipeline(GstPad *before);
     void detachFromPipeline(GstElement *before);
     bool detachFromPipeline(GstPad *before);
 
+    GstPad* generateNewPad();
+
     GstElement *getQueue() const;
-    virtual GstElement *getEncoder() const = 0;
+    GstElement *getTee() const;
     std::string getUUID() const;
     LineType getType() const;
 
@@ -39,4 +41,5 @@ protected:
 
     GstBin *bin = nullptr;
     GstElement *queue;
+    GstElement *tee;
 };

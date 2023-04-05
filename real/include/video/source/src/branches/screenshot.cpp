@@ -11,37 +11,26 @@
 using boost::format;
 using boost::str;
 
-void ScreenshotBranch::initPadEvent() {
-    PipeBranch::initPadEvent();
-    
-    this->datalines->nextelement = this->sink;
-
-    // if all important objects is set
-    if (datalines->nextelement && datalines->bin) 
-        // Decode bin will send signals like 'New video pad' or 'New audio pad'
-        g_signal_connect(decodebin, "pad-added", G_CALLBACK (PipeBranch::onNewPad), datalines.get());
-}
-
-ScreenshotBranch::ScreenshotBranch(const SourceConfigDto& config)
+ScreenshotBranch::ScreenshotBranch(const std::string &path)
 :   PipeBranch(
-        config,
-        "",
         "filesink"
     )
 {
-    g_print("Created stream branch %s\n", uuid.c_str());
+    g_print("Created screenshot branch %s\n", uuid.c_str());
+    g_object_set(sink, "location", path.c_str(), NULL);
 }
 
 bool ScreenshotBranch::loadBin(GstBin *bin) {
-    if (this->bin) return true;
+    if (!this->bin) 
+        this->bin = bin;
 
-    gst_bin_add_many(bin, queue, decodebin, sink, NULL);
+    gst_bin_add_many(bin, multiqueue, sink, NULL);
     
     return 
-        gst_element_link(queue, decodebin);
+        true;
 }
 
 void ScreenshotBranch::unloadBin() {
-    gst_bin_remove_many(bin, queue, decodebin, muxer, sink, NULL);
+    gst_bin_remove_many(bin, multiqueue, sink, NULL);
     bin = nullptr;
 }

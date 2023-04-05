@@ -34,21 +34,24 @@ VideoLine::VideoLine(
 {
     loadBin(bin);
 
+    g_print("%s - linking elements together!\n", uuid.c_str());
     bool isLinkedOk = 
         gst_element_link(this->queue, this->videoconverter) &&
         gst_element_link(this->videoconverter, this->videoscale) &&
         gst_element_link(this->videoscale, this->videorate) &&
-        gst_element_link(this->videorate, this->videoencoder);
+        gst_element_link(this->videorate, this->videoencoder) &&
+        gst_element_link(this->videoencoder, this->tee);
 
     if (!isLinkedOk) 
         throw std::runtime_error("VideoLine: Failed creation of videoline for some reason\n");
 }
 
 void VideoLine::loadBin(GstBin* bin) {
+    g_print("%s - loading BIN\n", uuid.c_str());
     if (this->bin != nullptr) return;
     
     this->bin = bin;
-    gst_bin_add_many(this->bin, this->queue, this->videoconverter, this->videoscale, this->videorate, this->videoencoder, NULL);
+    gst_bin_add_many(this->bin, this->tee, this->queue, this->videoconverter, this->videoscale, this->videorate, this->videoencoder, NULL);
 }
 
 void VideoLine::unloadBin() {
@@ -64,17 +67,24 @@ GstElement* VideoLine::createEncoder() {
     std::string platform = "";
     switch (Videoserver::accelerator) {
         case Videoserver::Accelerator::AMD:
-            platform = "amf";
+            platform = "amfh";
         break;
         case Videoserver::Accelerator::NVIDIA:
-            platform = "nvcuda";          
+            platform = "nvcudah";          
         break;
         default: 
-            platform = "";
+            platform = "x";
     }
 
+    g_print("Decired encoder: %s\n", str(format("%1%%2%enc") % platform % encoder_s).c_str());
+
+    // return gst_element_factory_make(
+    //     str(format("%1%%2%enc") % platform % encoder_s).c_str(),
+    //     str(format("%1%_encoder") % uuid).c_str()
+    // );
+
     return gst_element_factory_make(
-        str(format("%1%%2%enc") % platform % encoder_s).c_str(),
+        "x264enc",
         str(format("%1%_encoder") % uuid).c_str()
     );
 }

@@ -1,10 +1,12 @@
 #include <video/source/pipetree.hpp>
 
+#include <video/source/datalines/audioline.hpp>
+#include <video/source/datalines/videoline.hpp>
+
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/format.hpp>
-#include <regex>
 
 using boost::format;
 using boost::str;
@@ -46,58 +48,95 @@ GstPadProbeReturn PipeTree::padProbeCallback(GstPad* pad, GstPadProbeInfo *info,
     return GST_PAD_PROBE_OK;
 }
 
-void PipeTree::onNewRtspPad(GstElement *src, GstPad *newPad, GstElement* tee) {
-    GstPad *sink_pad = gst_element_get_static_pad(tee, "sink");
+
+void PipeTree::onErrorCallback(GstBus *bus, GstMessage *msg, gpointer data) {
+    GError *err;
+    gchar *debug_info;
+
+    gst_message_parse_error (msg, &err, &debug_info);
+    g_printerr ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
+    g_printerr ("Debugging information: %s\n", debug_info ? debug_info : "none");
+    g_clear_error (&err);
+    g_free (debug_info);
+}
+
+/*  TODO Make queue management. Adding branches emplaces them in queue. 
+*   This must be implemented via 'no-more-pads' signal. When arrived - solve all queue
+*/
+GstPadLinkReturn PipeTree::manageBranchQueue(const std::queue<std::shared_ptr<PipeBranch>>& branchQueue) {
+    bool loadResult = branch->loadBin(GST_BIN(pipeline));
+    if (!loadResult)
+        return GstPadLinkReturn::GST_PAD_LINK_REFUSED;
     
-	GstCaps *new_pad_caps = NULL;
-	GstStructure *new_pad_struct = NULL;
-	const gchar *new_pad_type = NULL;
+    for (auto &dataline : padinfo.datalines) {
+        auto newTeePad = gst_element_get_request_pad(dataline->getTee(), "src_%u");
+        auto newBranchPad = branch->getNewPad();
 
-    /* If our converter is already linked, we have nothing to do here */
-	if (gst_pad_is_linked(sink_pad)) {
-		g_print("Sink pad from %s already linked. Ignoring.\n", GST_ELEMENT_NAME(src));
-		goto exit;
-	}
+        auto linkResult = gst_pad_link(newTeePad, newBranchPad);
+        if (linkResult != GstPadLinkReturn::GST_PAD_LINK_OK)
+            return linkResult;
+    }
 
-	g_print("Received new pad '%s' from '%s':\n", GST_PAD_NAME(newPad), GST_ELEMENT_NAME(src));
+    branch->setState(currentState);
+    branches[name] = branch;
+    return GstPadLinkReturn::GST_PAD_LINK_OK;
+}
 
-	/* Check the new pad's name */
-	if (!g_str_has_prefix(GST_PAD_NAME(newPad), "recv_rtp_src_")) {
-		g_print("It is not the right pad. Need recv_rtp_src_. Ignoring.\n");
-		goto exit;
-	}
+void PipeTree::onNewPad(GstElement* element, GstPad* newPad, PadInfo* userData) {
+    g_print ("PipeBranch: Received new pad '%s'\n", GST_PAD_NAME (newPad));
 
-	/* Check the new pad's type */
-	new_pad_caps = gst_pad_query_caps(newPad, NULL);
-	new_pad_struct = gst_caps_get_structure(new_pad_caps, 0);
-	new_pad_type = gst_structure_get_name(new_pad_struct);
+    // New data line for video or audio
+    std::shared_ptr<DataLine> newLine;
 
-	/* Attempt the link */
-	if (!gst_pad_link(newPad, sink_pad)) {
-		g_print("Type is '%s' but link failed.\n", new_pad_type);
-	}
-	else {
-		g_print("Link succeeded (type '%s').\n", new_pad_type);
-	}
+    // Check new pad type
+    GstCaps *pad_caps = gst_pad_get_current_caps (newPad);
+    GstStructure *pad_struct = gst_caps_get_structure (pad_caps, 0);
+    const gchar *pad_type = gst_structure_get_name (pad_struct);
+    if (g_str_has_prefix (pad_type, "audio/x-raw")) {
+        newLine = std::make_shared<AudioLine>(
+            userData->bin,
+            userData->config.audioencoding,
+            userData->config.quality,
+            userData->config.volume);
+        g_object_set(std::reinterpret_pointer_cast<AudioLine>(newLine)->getVolume(), "mute", userData->config.mute, NULL);
+    }
+    else if (g_str_has_prefix(pad_type, "video/x-raw")) {
+        newLine = std::make_shared<VideoLine>(
+            userData->bin,
+            userData->config.videoencoding,
+            VideoLine::strToResolution(userData->config.resolution),
+            userData->config.fps,
+            userData->config.bitrate
+        );
+    }
+    else return;
 
-exit:
-	/* Unreference the new pad's caps, if we got them */
-	if (new_pad_caps != NULL)
-		gst_caps_unref(new_pad_caps);
+    // Linking pad
+    if (newLine->attachToPipeline(newPad) != GstPadLinkReturn::GST_PAD_LINK_OK) {
+        g_print ("Type is '%s' but link failed.\n", pad_type);
+        return;
+    } else g_print ("Link succeeded (type '%s').\n", pad_type);
 
-	/* Unreference the sink pad */
-	gst_object_unref(sink_pad);
+    userData->datalines.push_back(newLine);
+    // Unreference the new pad's caps, if we got them
+    if (pad_caps != NULL)
+        gst_caps_unref (pad_caps);
 }
 
 PipeTree::PipeTree() 
 :   uuid(boost::uuids::to_string(boost::uuids::random_generator_mt19937()())),
-    pipeline(gst_pipeline_new(uuid.c_str())),
-    tee(gst_element_factory_make("tee", str(format("%1%_tee") % uuid).c_str()))
+    pipeline(gst_pipeline_new(uuid.c_str()))
 {
     g_print("Created tree %s\n", uuid.c_str());
     
-    // Add to pipeline
-    gst_bin_add_many(GST_BIN(pipeline), tee, NULL);
+    // Setting bin for padinfo data
+    padinfo.bin = GST_BIN(pipeline);
+
+    // Creating error callback from pipeline bus
+    auto bus = gst_element_get_bus (pipeline);
+    gst_bus_add_signal_watch (bus);
+    g_signal_connect (G_OBJECT (bus), "message::error", G_CALLBACK(onErrorCallback), nullptr);
+    gst_object_unref (bus);
 }
 
 PipeTree::PipeTree(const std::string& source)
@@ -113,28 +152,13 @@ PipeTree::~PipeTree() {
     gst_object_unref(pipeline);
 }
 
-GstPadLinkReturn PipeTree::addBranch(const std::string &name, std::shared_ptr<PipeBranch> branch) {
-    branch->loadBin(GST_BIN(pipeline));
-    
-    // Creating new pad and then link it
-    GstPad* newSrcPad = gst_element_request_pad_simple(tee, "src_%u");
-    GstPad* branchSinkPad = gst_element_get_static_pad(branch->getQueue(), "sink");
-
-    auto linkResult = gst_pad_link(newSrcPad, branchSinkPad);
-    if (linkResult == GstPadLinkReturn::GST_PAD_LINK_OK) {
-        branches[name] = branch;
-        teePads[name] = newSrcPad;
-    }
-
-    return linkResult;
+void PipeTree::addBranch(std::shared_ptr<PipeBranch> branch) {
+    padinfo.branchQueue.push(branch);
 }
 
 void PipeTree::removeBranch(const std::string& name) {
-    if (!branches.contains(name)) return;
-
-    gst_pad_add_probe (teePads[name], 
-        GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM,
-        padProbeCallback, branches[name].get(), NULL);
+    if (branches.contains(name)) 
+        branches.erase(name);
 }
 
 GstElement* PipeTree::getSink(const std::string &name) {
@@ -144,20 +168,84 @@ GstElement* PipeTree::getSink(const std::string &name) {
 }
 
 void PipeTree::setSource(const std::string &source) {
-    std::regex protocolRegex("(\\w+):/");
-    std::smatch match;
-    if (!std::regex_search(source, match, protocolRegex)) return;
-    
-    std::string protocol = match.str(1);
-    std::string sourceType = str(boost::format("%1%src") % protocol);
+    this->source = gst_element_factory_make("uridecodebin", str(format("%1%_uridecodebin") % uuid).c_str());
+    gst_bin_add(GST_BIN(pipeline), this->source);
+    g_object_set(this->source, "uri", source.c_str(), NULL);
 
-    this->source = gst_element_factory_make(sourceType.c_str(), str(format("%1%_source") % uuid).c_str());
-    gst_bin_add_many(GST_BIN(pipeline), this->source, this->tee, NULL);
-    g_object_set(this->source, "location", source.c_str(), NULL);
-
-    g_signal_connect(this->source, "pad-added", G_CALLBACK(onNewRtspPad), tee);
+    g_signal_connect(this->source, "pad-added", G_CALLBACK(onNewPad), &padinfo);
 }
 
 GstStateChangeReturn PipeTree::setState(GstState state) {
-    return gst_element_set_state(pipeline, state);
+    auto stateResult = gst_element_set_state(pipeline, state);
+    if (stateResult != GstStateChangeReturn::GST_STATE_CHANGE_FAILURE)
+        currentState = state;
+
+    return stateResult;
+}
+
+void PipeTree::updateBitrate(int bitrate) {
+    for (auto &dataline : padinfo.datalines) {
+        if (dataline->getType() == DataLine::LineType::Video) {
+            auto encoder = std::reinterpret_pointer_cast<VideoLine>(dataline)->getEncoder();
+            g_object_set(encoder, "bitrate", bitrate, NULL);
+        }
+    }
+}
+
+void PipeTree::updateResolution(const std::string resolution) {
+    auto targetResolution = VideoLine::strToResolution(resolution);
+
+    for (auto &dataline : padinfo.datalines) {
+        if (dataline->getType() == DataLine::LineType::Video) {
+            auto scale = std::reinterpret_pointer_cast<VideoLine>(dataline)->getScale();
+            g_object_set(scale, "width", targetResolution.width, NULL);
+            g_object_set(scale, "height", targetResolution.height, NULL);
+        }
+    }
+}
+
+void PipeTree::updateFrameRate(int fps) {
+    for (auto &dataline : padinfo.datalines) {
+        if (dataline->getType() == DataLine::LineType::Video) {
+            auto rate = std::reinterpret_pointer_cast<VideoLine>(dataline)->getRate();
+            g_object_set(rate, "max-rate", fps, NULL);
+        }
+    }
+}
+
+void PipeTree::updateAudioQuality(double quality) {
+    if (quality > 1.0) quality = 1.0;
+    else if (quality < 0.0) quality = 0.0;
+
+    for (auto &dataline : padinfo.datalines) {
+        if (dataline->getType() == DataLine::LineType::Audio) {
+            auto encoder = std::reinterpret_pointer_cast<AudioLine>(dataline)->getEncoder();
+            g_object_set(encoder, "quality", quality, NULL);
+        }
+    }
+}
+
+void PipeTree::updateAudioVolume(double volume) {
+    if (volume > 1.0) volume = 1.0;
+    else if (volume < 0.0) volume = 0.0;
+
+    for (auto &dataline : padinfo.datalines) {
+        if (dataline->getType() == DataLine::LineType::Audio) {
+            auto volume_g = std::reinterpret_pointer_cast<AudioLine>(dataline)->getVolume();
+            g_object_set(volume_g, "volume", volume, NULL);
+        }
+    }
+}
+
+void PipeTree::mute(bool state) {
+    for (auto &dataline : padinfo.datalines) {
+        if (dataline->getType() == DataLine::LineType::Audio) {
+            auto volume = std::reinterpret_pointer_cast<AudioLine>(dataline)->getVolume();
+            g_object_set(volume, "mute", state, NULL);
+        }
+    }
+}
+
+void PipeTree::setConfig(SourceConfigDto& config) {
+    padinfo.config = config;
 }

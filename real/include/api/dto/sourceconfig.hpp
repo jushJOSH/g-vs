@@ -15,7 +15,7 @@ class SourceConfigDto : public oatpp::DTO {
     // Videoline settings
     DTO_FIELD(Int32, fps) = 15;
     DTO_FIELD(String, resolution) = "1280x720";
-    DTO_FIELD(String, videoencoding) = "h264";
+    DTO_FIELD(String, videoencoding) = "264";
     DTO_FIELD(Int32, bitrate) = 2000;
 
     // Audioline settings

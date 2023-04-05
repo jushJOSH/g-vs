@@ -17,14 +17,16 @@ private:
     };
 
 public:
-    PipeBranch(const SourceConfigDto &config, const std::string& muxer = "", const std::string& sink = "");
-    PipeBranch(GstBin* bin, const SourceConfigDto &config, const std::string& muxer = "", const std::string& sink = "");
+    PipeBranch(const std::string& sink, const std::string& muxer = "");
+    PipeBranch(GstBin* bin, const std::string& sink, const std::string& muxer = "");
     //virtual ~PipeBranch();
 
     // Getters
     GstElement *getQueue() const;
+    GstPad *getNewPad();
     GstElement *getSink() const;
     GstBin* getBin() const;
+    std::string getUUID() const;
 
     // Update params
     void updateBitrate(int bitrate);
@@ -40,20 +42,18 @@ public:
     void setSink(GstElement* sink);
 
     // Bin ops
-    virtual bool loadBin(GstBin *bin);
-    virtual void unloadBin();
+    virtual bool loadBin(GstBin *bin) = 0;
+    virtual void unloadBin() = 0;
     
 protected:
-    static void onNewPad(GstElement* element, GstPad* newPad, gpointer userData);
-    virtual void initPadEvent();
+    static void onNewPad(GstElement* element, GstPad* newPad, GstElement *muxer);
 
 protected:
     std::string uuid;
     std::shared_ptr<DataLines> datalines;
     SourceConfigDto config;
 
-    GstElement *queue;
-    GstElement *decodebin;
+    GstElement* multiqueue;
     GstElement* muxer;
     GstElement* sink;
 

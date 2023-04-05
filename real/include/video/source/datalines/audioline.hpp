@@ -25,11 +25,6 @@ private:
     GstElement* createEncoder();
 
 private:
-    std::string uuid;
-    std::string encoder_s;
-
-    GstBin *bin = nullptr;
-    GstElement *queue;
     GstElement *audioconverter;
     GstElement *volume;
     GstElement *audioencoder;

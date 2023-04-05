@@ -33,7 +33,8 @@ AudioLine::AudioLine(
     bool isLinkedOk = 
         gst_element_link(this->queue, this->audioconverter) &&
         gst_element_link(this->audioconverter, this->volume) &&
-        gst_element_link(this->volume, this->audioencoder);
+        gst_element_link(this->volume, this->audioencoder) &&
+        gst_element_link(this->audioencoder, this->tee);
 
     if (!isLinkedOk) 
         throw std::runtime_error("AudioLine: Failed creation of audioline for some reason\n");
@@ -50,7 +51,7 @@ void AudioLine::loadBin(GstBin* bin) {
     if (this->bin != nullptr) return;
     
     this->bin = bin;
-    gst_bin_add_many(this->bin, this->queue, this->audioconverter, this->volume, this->audioencoder, NULL);
+    gst_bin_add_many(this->bin, this->tee, this->queue, this->audioconverter, this->volume, this->audioencoder, NULL);
 }
 
 void AudioLine::unloadBin() {

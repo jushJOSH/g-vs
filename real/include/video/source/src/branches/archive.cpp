@@ -11,35 +11,26 @@
 using boost::format;
 using boost::str;
 
-void ArchiveBranch::initPadEvent() {
-    PipeBranch::initPadEvent();
-    
-    this->datalines->nextelement = this->muxer;
-
-    // if all important objects is set
-    if (datalines->nextelement && datalines->bin) 
-        // Decode bin will send signals like 'New video pad' or 'New audio pad'
-        g_signal_connect(decodebin, "pad-added", G_CALLBACK (PipeBranch::onNewPad), datalines.get());
-}
-
-ArchiveBranch::ArchiveBranch(const SourceConfigDto& config)
+ArchiveBranch::ArchiveBranch(const std::string &path)
 :   PipeBranch(
-        config,
-        "mp4mux", 
-        "filesink"
+        "filesink",
+        "mp4mux"
     )
 {
     g_print("Created archive branch %s\n", uuid.c_str());
-    std::string location_s = datalines->dtoConfig.archive_path.getValue("") + "test.mp4";
-    g_object_set(sink, "location", location_s.c_str(), NULL);
+    g_object_set(sink, "location", path.c_str(), NULL);
+}
 
-    // Link all branch datalines into single muxer
-    bool isLinkedOk = true;
-    for (auto& dataline : datalines->datalines)
-        isLinkedOk = isLinkedOk && gst_element_link(dataline->getEncoder(), this->muxer);
+bool ArchiveBranch::loadBin(GstBin *bin) {
+    if (!this->bin)
+        this->bin = bin;
+
+    gst_bin_add_many(bin, multiqueue, muxer, sink, NULL);
     
-    if (!isLinkedOk)
-        throw std::runtime_error("Archive Branch: error on linking datalines");
+    return gst_element_link(muxer, sink);
+}
 
-    gst_element_link(muxer, sink);
+void ArchiveBranch::unloadBin() {
+    gst_bin_remove_many(bin, multiqueue, muxer, sink, NULL);
+    bin = nullptr;
 }

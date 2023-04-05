@@ -11,23 +11,25 @@
 using boost::format;
 using boost::str;
 
-void StreamBranch::initPadEvent() {
-    PipeBranch::initPadEvent();
-    
-    this->datalines->nextelement = this->muxer;
-
-    // if all important objects is set
-    if (datalines->nextelement && datalines->bin) 
-        // Decode bin will send signals like 'New video pad' or 'New audio pad'
-        g_signal_connect(decodebin, "pad-added", G_CALLBACK (PipeBranch::onNewPad), datalines.get());
-}
-
-StreamBranch::StreamBranch(const SourceConfigDto& config)
+StreamBranch::StreamBranch()
 :   PipeBranch(
-        config,
-        "multipartmux",
-        "appsink"
+        "appsink",
+        "multipartmux"
     )
 {
     g_print("Created stream branch %s\n", uuid.c_str());
+}
+
+bool StreamBranch::loadBin(GstBin *bin) {
+    if (!this->bin)
+        this->bin = bin;
+
+    gst_bin_add_many(bin, multiqueue, muxer, sink, NULL);
+    
+    return gst_element_link(muxer, sink);
+}
+
+void StreamBranch::unloadBin() {
+    gst_bin_remove_many(bin, multiqueue, muxer, sink, NULL);
+    bin = nullptr;
 }
