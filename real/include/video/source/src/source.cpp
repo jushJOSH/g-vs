@@ -52,10 +52,37 @@ void Source::waitSample() const {
     while (!arg->samples->size());
 }
 
-bool Source::addBranch(const std::string &name, std::shared_ptr<PipeBranch> branch) {
-    return sourceElements->addBranch(name, branch);
-}
-
 void Source::setConfig(SourceConfigDto& config) {
     sourceElements->setConfig(config);
+}
+
+std::string Source::getUUID() const {
+    return uuid;
+}
+
+std::string Source::runStream(GCallback callback) {
+    auto streamBranch = std::make_shared<StreamBranch>();
+    streamBranch->setCallback(callback, (gpointer)arg.get());
+
+    sourceElements->addBranch(streamBranch);
+}
+
+void Source::stopStream(const std::string &name) {
+
+}
+
+std::string Source::runArchive() {
+    auto archiveBranch = std::make_shared<ArchiveBranch>("/home/egor/test.mp4");
+}
+
+void Source::stopArchive(const std::string& name) {
+
+}
+
+std::string Source::runScreenshot() {
+    auto screenshotBranch = std::make_shared<ScreenshotBranch>("/home/egor/test.png");
+}
+
+void Source::stopScreenshot(const std::string& name) {
+
 }

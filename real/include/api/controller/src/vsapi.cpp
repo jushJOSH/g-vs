@@ -27,9 +27,8 @@ VSTypes::OatResponse VsapiController::getLive() {
     auto stream = std::make_shared<StreamBranch>();
 
     auto changeStateResult = testSource->setState();
-    //testSource.addBranch("screenshot", screenshot);
-    testSource->addBranch("archive", std::make_shared<ArchiveBranch>(*archive));
-    //testSource.addBranch("stream", stream);
+    //testSource->addBranch(std::make_shared<ArchiveBranch>(*archive));
+    //testSource.addBranch(stream);
 
     if (changeStateResult == GST_STATE_CHANGE_FAILURE) {
         g_printerr ("Unable to set the pipeline to the playing state.\n");

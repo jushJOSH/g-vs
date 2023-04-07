@@ -18,9 +18,14 @@ class PipeTree {
 private:
     struct PadInfo {
         GstBin* bin;
+        GstState currentState;
+
         SourceConfigDto config;
+        
         std::vector<std::shared_ptr<DataLine>> datalines;
         std::queue<std::shared_ptr<PipeBranch>> branchQueue;
+        std::unordered_map<std::string, std::shared_ptr<PipeBranch>> branches;
+        bool noMorePads = false;
     };
 
 public:
@@ -46,20 +51,19 @@ public:
     void mute(bool state);
 
 private:
-    static GstPadProbeReturn padProbeCallback(GstPad* pad, GstPadProbeInfo *info, gpointer user_data);
-    static GstPadProbeReturn eventProbeCallback(GstPad* pad, GstPadProbeInfo *info, gpointer user_data);
+    // static GstPadProbeReturn padProbeCallback(GstPad* pad, GstPadProbeInfo *info, gpointer user_data);
+    // static GstPadProbeReturn eventProbeCallback(GstPad* pad, GstPadProbeInfo *info, gpointer user_data);
     static void onNewPad(GstElement *src, GstPad *newPad, PadInfo* data);
     static void onErrorCallback(GstBus *bus, GstMessage *msg, gpointer data);
-    static GstPadLinkReturn manageBranchQueue(const std::queue<std::shared_ptr<PipeBranch>>& branchQueue);
+    static int manageBranchQueue(PadInfo& data);
+    static void onNoMorePads(GstElement* src, PadInfo* data);
 
 private:
     // Map of 'name' of branch and branch itself
-    std::unordered_map<std::string, std::shared_ptr<PipeBranch>> branches;
     std::string uuid;
     PadInfo padinfo;
     
     // Uri decode bin
     GstElement* source;
     GstElement* pipeline;
-    GstState currentState;
 };

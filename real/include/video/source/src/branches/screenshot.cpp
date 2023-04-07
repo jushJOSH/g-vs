@@ -8,29 +8,47 @@
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include <png++/png.hpp>
+
 using boost::format;
 using boost::str;
 
 ScreenshotBranch::ScreenshotBranch(const std::string &path)
 :   PipeBranch(
-        "filesink"
+        "appsink",
+        "mp4mux"
     )
 {
     g_print("Created screenshot branch %s\n", uuid.c_str());
-    g_object_set(sink, "location", path.c_str(), NULL);
+    g_signal_connect(sink, "new-sample", G_CALLBACK(onNewSample), &uuid);
 }
 
 bool ScreenshotBranch::loadBin(GstBin *bin) {
     if (!this->bin) 
         this->bin = bin;
 
-    gst_bin_add_many(bin, multiqueue, sink, NULL);
+    gst_bin_add_many(bin, sink, NULL);
     
     return 
         true;
 }
 
 void ScreenshotBranch::unloadBin() {
-    gst_bin_remove_many(bin, multiqueue, sink, NULL);
+    gst_bin_remove_many(bin, sink, NULL);
     bin = nullptr;
+}
+
+GstPad* ScreenshotBranch::getNewPad(DataLine::LineType type) {
+    switch (type) {
+        case DataLine::LineType::Video:
+            g_print("ScreenshotBranch: Getting new pad\n");
+        return gst_element_get_static_pad(this->sink, "sink");
+
+        default:
+        return nullptr;
+    }
+}
+
+void ScreenshotBranch::onNewSample(GstElement* src, gpointer arg) {
+    
 }

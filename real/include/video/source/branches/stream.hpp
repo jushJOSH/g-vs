@@ -7,8 +7,10 @@ public:
     StreamBranch();
     //~StreamBranch();
 
+    GstPad* getNewPad(DataLine::LineType type);
+
     bool loadBin(GstBin *bin);
     void unloadBin();
 
-    void setCallback(GCallback callback, gpointer *callbackArg); 
+    void setCallback(GCallback callback, gpointer callbackArg); 
 };

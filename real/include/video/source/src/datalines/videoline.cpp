@@ -64,7 +64,7 @@ GstElement* VideoLine::getEncoder() const {
 }
 
 GstElement* VideoLine::createEncoder() {
-    std::string platform = "";
+    std::string platform = "x";
     switch (Videoserver::accelerator) {
         case Videoserver::Accelerator::AMD:
             platform = "amfh";
@@ -72,19 +72,12 @@ GstElement* VideoLine::createEncoder() {
         case Videoserver::Accelerator::NVIDIA:
             platform = "nvcudah";          
         break;
-        default: 
-            platform = "x";
     }
 
-    g_print("Decired encoder: %s\n", str(format("%1%%2%enc") % platform % encoder_s).c_str());
-
-    // return gst_element_factory_make(
-    //     str(format("%1%%2%enc") % platform % encoder_s).c_str(),
-    //     str(format("%1%_encoder") % uuid).c_str()
-    // );
-
+    g_print("Desired encoder: %s\n", str(format("%1%%2%enc") % platform % encoder_s).c_str());
+    
     return gst_element_factory_make(
-        "x264enc",
+        str(format("%1%%2%enc") % platform % encoder_s).c_str(),
         str(format("%1%_encoder") % uuid).c_str()
     );
 }

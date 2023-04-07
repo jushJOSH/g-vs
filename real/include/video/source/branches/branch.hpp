@@ -22,8 +22,7 @@ public:
     //virtual ~PipeBranch();
 
     // Getters
-    GstElement *getQueue() const;
-    GstPad *getNewPad();
+    virtual GstPad *getNewPad(DataLine::LineType type) = 0;
     GstElement *getSink() const;
     GstBin* getBin() const;
     std::string getUUID() const;
@@ -46,14 +45,13 @@ public:
     virtual void unloadBin() = 0;
     
 protected:
-    static void onNewPad(GstElement* element, GstPad* newPad, GstElement *muxer);
+    static void onNoMorePads(GstElement* src, GstElement *next);
 
 protected:
     std::string uuid;
     std::shared_ptr<DataLines> datalines;
     SourceConfigDto config;
 
-    GstElement* multiqueue;
     GstElement* muxer;
     GstElement* sink;
 

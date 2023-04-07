@@ -11,42 +11,42 @@
 using boost::format;
 using boost::str;
 
-GstPadProbeReturn PipeTree::eventProbeCallback(GstPad* pad, GstPadProbeInfo *info, gpointer user_data) {
-    if (GST_EVENT_TYPE (GST_PAD_PROBE_INFO_DATA (info)) != GST_EVENT_EOS)
-        return GST_PAD_PROBE_OK;
+// GstPadProbeReturn PipeTree::eventProbeCallback(GstPad* pad, GstPadProbeInfo *info, gpointer user_data) {
+//     if (GST_EVENT_TYPE (GST_PAD_PROBE_INFO_DATA (info)) != GST_EVENT_EOS)
+//         return GST_PAD_PROBE_OK;
     
-    g_print("Entered eos probe call\n");
+//     g_print("Entered eos probe call\n");
 
-    PipeBranch* userBranch = (PipeBranch*)user_data;
+//     PipeBranch* userBranch = (PipeBranch*)user_data;
 
-    gst_pad_remove_probe(pad, GST_PAD_PROBE_INFO_ID(info));
-    userBranch->unloadBin();
+//     gst_pad_remove_probe(pad, GST_PAD_PROBE_INFO_ID(info));
+//     userBranch->unloadBin();
 
-    return GST_PAD_PROBE_DROP;
-}
+//     return GST_PAD_PROBE_DROP;
+// }
 
-GstPadProbeReturn PipeTree::padProbeCallback(GstPad* pad, GstPadProbeInfo *info, gpointer user_data) {
-    g_print("Entered pad probe call\n");
+// GstPadProbeReturn PipeTree::padProbeCallback(GstPad* pad, GstPadProbeInfo *info, gpointer user_data) {
+//     g_print("Entered pad probe call\n");
     
-    PipeBranch* userBranch = (PipeBranch*)user_data;
-    GstPad *src, *sink;
+//     PipeBranch* userBranch = (PipeBranch*)user_data;
+//     GstPad *src, *sink;
 
-    // Removing probe
-    gst_pad_remove_probe(pad, GST_PAD_PROBE_INFO_ID(info));
+//     // Removing probe
+//     gst_pad_remove_probe(pad, GST_PAD_PROBE_INFO_ID(info));
     
-    // Setting up new probe for EOS event
-    src = gst_element_get_static_pad (userBranch->getQueue(), "src");
-    gst_pad_add_probe (src, 
-        (GstPadProbeType)(GST_PAD_PROBE_TYPE_BLOCK | GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM),
-        eventProbeCallback, user_data, NULL);
-    gst_object_unref (src);
+//     // Setting up new probe for EOS event
+//     src = gst_element_get_static_pad (userBranch->getQueue(), "src");
+//     gst_pad_add_probe (src, 
+//         (GstPadProbeType)(GST_PAD_PROBE_TYPE_BLOCK | GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM),
+//         eventProbeCallback, user_data, NULL);
+//     gst_object_unref (src);
 
-    sink = gst_element_get_static_pad (userBranch->getQueue(), "sink");
-    gst_pad_send_event (sink, gst_event_new_eos ());
-    gst_object_unref (sink);
+//     sink = gst_element_get_static_pad (userBranch->getQueue(), "sink");
+//     gst_pad_send_event (sink, gst_event_new_eos ());
+//     gst_object_unref (sink);
 
-    return GST_PAD_PROBE_OK;
-}
+//     return GST_PAD_PROBE_OK;
+// }
 
 
 void PipeTree::onErrorCallback(GstBus *bus, GstMessage *msg, gpointer data) {
@@ -60,26 +60,42 @@ void PipeTree::onErrorCallback(GstBus *bus, GstMessage *msg, gpointer data) {
     g_free (debug_info);
 }
 
-/*  TODO Make queue management. Adding branches emplaces them in queue. 
-*   This must be implemented via 'no-more-pads' signal. When arrived - solve all queue
-*/
-GstPadLinkReturn PipeTree::manageBranchQueue(const std::queue<std::shared_ptr<PipeBranch>>& branchQueue) {
-    bool loadResult = branch->loadBin(GST_BIN(pipeline));
-    if (!loadResult)
-        return GstPadLinkReturn::GST_PAD_LINK_REFUSED;
-    
-    for (auto &dataline : padinfo.datalines) {
-        auto newTeePad = gst_element_get_request_pad(dataline->getTee(), "src_%u");
-        auto newBranchPad = branch->getNewPad();
+int PipeTree::manageBranchQueue(PadInfo& data) {
+    g_print("PipeTree: Started queue management\n");
 
-        auto linkResult = gst_pad_link(newTeePad, newBranchPad);
-        if (linkResult != GstPadLinkReturn::GST_PAD_LINK_OK)
-            return linkResult;
+    int successfulCount = 0;
+    while (!data.branchQueue.empty()) {
+        auto branch = data.branchQueue.front();
+        data.branchQueue.pop();
+
+        bool loadResult = branch->loadBin(data.bin);
+        if (!loadResult)
+            continue;
+        
+        for (auto &dataline : data.datalines) {
+            auto newTeePad = gst_element_get_request_pad(dataline->getTee(), "src_%u");
+            auto newBranchPad = branch->getNewPad(dataline->getType());
+
+            g_print("Branch type : %s\n", typeid(branch).name());
+
+            if (gst_pad_is_linked(newBranchPad)) break;
+
+            auto linkResult = gst_pad_link(newTeePad, newBranchPad);
+            if (linkResult != GstPadLinkReturn::GST_PAD_LINK_OK)
+                continue;
+        }
+
+        successfulCount++;
+        branch->setState(data.currentState);
+        data.branches[branch->getUUID()] = branch;
     }
 
-    branch->setState(currentState);
-    branches[name] = branch;
-    return GstPadLinkReturn::GST_PAD_LINK_OK;
+    return successfulCount;
+}
+
+void PipeTree::onNoMorePads(GstElement* src, PadInfo* data) {
+    data->noMorePads = true;
+    manageBranchQueue(*data);
 }
 
 void PipeTree::onNewPad(GstElement* element, GstPad* newPad, PadInfo* userData) {
@@ -152,18 +168,25 @@ PipeTree::~PipeTree() {
     gst_object_unref(pipeline);
 }
 
+// All branches must be in queue
+// Queue will be solved as soon as noMorePads signal appears
 void PipeTree::addBranch(std::shared_ptr<PipeBranch> branch) {
     padinfo.branchQueue.push(branch);
+
+    // If add branch after pad init
+    // then add them asap
+    if (padinfo.noMorePads)
+        manageBranchQueue(padinfo);
 }
 
 void PipeTree::removeBranch(const std::string& name) {
-    if (branches.contains(name)) 
-        branches.erase(name);
+    if (padinfo.branches.contains(name)) 
+        padinfo.branches.erase(name);
 }
 
 GstElement* PipeTree::getSink(const std::string &name) {
-    return branches.contains(name) 
-        ? branches[name]->getSink() 
+    return padinfo.branches.contains(name) 
+        ? padinfo.branches[name]->getSink() 
         : nullptr;
 }
 
@@ -173,12 +196,13 @@ void PipeTree::setSource(const std::string &source) {
     g_object_set(this->source, "uri", source.c_str(), NULL);
 
     g_signal_connect(this->source, "pad-added", G_CALLBACK(onNewPad), &padinfo);
+    g_signal_connect(this->source, "no-more-pads", G_CALLBACK(onNoMorePads), &padinfo);
 }
 
 GstStateChangeReturn PipeTree::setState(GstState state) {
     auto stateResult = gst_element_set_state(pipeline, state);
     if (stateResult != GstStateChangeReturn::GST_STATE_CHANGE_FAILURE)
-        currentState = state;
+        padinfo.currentState = state;
 
     return stateResult;
 }

@@ -24,12 +24,31 @@ bool StreamBranch::loadBin(GstBin *bin) {
     if (!this->bin)
         this->bin = bin;
 
-    gst_bin_add_many(bin, multiqueue, muxer, sink, NULL);
+    gst_bin_add_many(bin, muxer, sink, NULL);
     
     return gst_element_link(muxer, sink);
 }
 
 void StreamBranch::unloadBin() {
-    gst_bin_remove_many(bin, multiqueue, muxer, sink, NULL);
+    gst_bin_remove_many(bin, muxer, sink, NULL);
     bin = nullptr;
+}
+
+GstPad* StreamBranch::getNewPad(DataLine::LineType type) {
+    switch(type) {
+        case DataLine::LineType::Audio:
+        g_print("StreamBranch: Getting new audio pad\n");
+        return gst_element_get_request_pad(muxer, "audio_%u");
+
+        case DataLine::LineType::Video:
+        g_print("StreamBranch: Getting new video pad\n");
+        return gst_element_get_request_pad(muxer, "video_%u");
+
+        default:
+        return nullptr;
+    }
+}
+
+void StreamBranch::setCallback(GCallback callback, gpointer callbackArg) {
+    g_signal_connect(sink, "new-sample", callback, callbackArg);
 }

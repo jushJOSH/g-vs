@@ -32,18 +32,32 @@ public:
     Source(const std::string& source, SourceConfigDto& config);
     ~Source();
 
-    std::shared_ptr<Sample> getSample();
+    // Get/Set things
+    std::string getUUID() const;
     GstStateChangeReturn setState(GstState state = GST_STATE_PLAYING);
     void setConfig(SourceConfigDto& config);
 
-    bool addBranch(const std::string &name, std::shared_ptr<PipeBranch> branch);
-    //bool Source::addTestBranch();
-    
-    void waitSample() const;
+    // Branch management
+    // Stream
+    std::string runStream(GCallback callback);
+    void stopStream(const std::string& name);
 
+    // Archive
+    std::string runArchive();
+    void stopArchive(const std::string &name);
+    
+    // Screenshot
+    std::string runScreenshot();
+    void stopScreenshot(const std::string &name);
+    
+    // Sample things
+    std::shared_ptr<Sample> getSample();
+    void waitSample() const;
     static GstFlowReturn onNewSample(GstElement* appsink, CallbackArg *data);
 
 protected:
+    std::string source;
+
     std::string uuid;
     std::shared_ptr<PipeTree> sourceElements;
     std::shared_ptr<CallbackArg> arg;
