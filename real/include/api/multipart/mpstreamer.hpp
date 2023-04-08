@@ -12,13 +12,13 @@ using namespace oatpp::web::mime::multipart;
 
 class MPStreamer : public Multipart {
 public:
-    MPStreamer(std::shared_ptr<Source>& source)
-    :   Multipart(generateRandomBoundary()), source(source)
+    MPStreamer(std::shared_ptr<StreamBranch>& branch)
+    :   Multipart(generateRandomBoundary()), branch(branch)
     {}
 
     std::shared_ptr<Part> readNextPart(oatpp::async::Action& action);
     void writeNextPart(const std::shared_ptr<Part>& part, oatpp::async::Action& action) override;
 
 private:
-    std::shared_ptr<Source> source;
+    std::shared_ptr<StreamBranch> branch;
 };

@@ -1,6 +1,6 @@
 #include <video/source/branches/screenshot.hpp>
-#include <video/source/datalines/videoline.hpp>
-#include <video/source/datalines/audioline.hpp>
+#include <video/source/datalines/video.hpp>
+#include <video/source/datalines/audio.hpp>
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/random_generator.hpp>
@@ -8,29 +8,31 @@
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include <png++/png.hpp>
-
 using boost::format;
 using boost::str;
 
 ScreenshotBranch::ScreenshotBranch(const std::string &path)
 :   PipeBranch(
-        "appsink",
-        "mp4mux"
+        "filesink"
     )
 {
     g_print("Created screenshot branch %s\n", uuid.c_str());
-    g_signal_connect(sink, "new-sample", G_CALLBACK(onNewSample), &uuid);
+    g_object_set(sink, "location", path.c_str(), NULL);
+}
+
+ScreenshotBranch::ScreenshotBranch(GstBin* bin, const std::string &path)
+:   ScreenshotBranch(path)
+{
+    loadBin(bin);
 }
 
 bool ScreenshotBranch::loadBin(GstBin *bin) {
-    if (!this->bin) 
+    if (!this->bin)
         this->bin = bin;
 
     gst_bin_add_many(bin, sink, NULL);
     
-    return 
-        true;
+    return true;
 }
 
 void ScreenshotBranch::unloadBin() {
@@ -39,16 +41,16 @@ void ScreenshotBranch::unloadBin() {
 }
 
 GstPad* ScreenshotBranch::getNewPad(DataLine::LineType type) {
-    switch (type) {
+    switch(type) {
         case DataLine::LineType::Video:
-            g_print("ScreenshotBranch: Getting new pad\n");
-        return gst_element_get_static_pad(this->sink, "sink");
+        g_print("ScreenshotBranch: Getting new video pad\n");
+        return gst_element_get_static_pad(sink, "sink");
 
         default:
         return nullptr;
     }
 }
 
-void ScreenshotBranch::onNewSample(GstElement* src, gpointer arg) {
-    
+std::string ScreenshotBranch::getPath() const {
+    return this->path;
 }

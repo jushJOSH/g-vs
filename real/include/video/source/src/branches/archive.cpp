@@ -1,6 +1,6 @@
 #include <video/source/branches/archive.hpp>
-#include <video/source/datalines/videoline.hpp>
-#include <video/source/datalines/audioline.hpp>
+#include <video/source/datalines/video.hpp>
+#include <video/source/datalines/audio.hpp>
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/random_generator.hpp>
@@ -47,4 +47,8 @@ GstPad* ArchiveBranch::getNewPad(DataLine::LineType type) {
         default:
         return nullptr;
     }
+}
+
+std::string ArchiveBranch::getPath() const {
+    return this->path;
 }

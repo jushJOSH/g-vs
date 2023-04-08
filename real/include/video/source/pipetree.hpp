@@ -7,10 +7,10 @@
 #include <queue>
 
 #include <video/source/branches/branch.hpp>
-#include <video/source/datalines/dataline.hpp>
+#include <video/source/datalines/data.hpp>
 #include <video/source/branches/archive.hpp>
-#include <video/source/branches/stream.hpp>
 #include <video/source/branches/screenshot.hpp>
+#include <video/source/branches/stream.hpp>
 
 class PipeBranch;
 
@@ -42,6 +42,7 @@ public:
     void setConfig(SourceConfigDto& config);
 
     GstElement* getSink(const std::string &name);
+    std::vector<std::shared_ptr<DataLine>> &getDatalines();
 
     void updateBitrate(int bitrate);
     void updateResolution(const std::string resolution);

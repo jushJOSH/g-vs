@@ -1,7 +1,7 @@
 #include <video/source/branches/branch.hpp>
 
-#include <video/source/datalines/audioline.hpp>
-#include <video/source/datalines/videoline.hpp>
+#include <video/source/datalines/audio.hpp>
+#include <video/source/datalines/video.hpp>
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/random_generator.hpp>

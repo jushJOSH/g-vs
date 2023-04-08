@@ -3,7 +3,7 @@
 #include <gst/gst.h>
 #include <unordered_map>
 #include <video/source/source.hpp>
-#include <nlohmann/json.hpp>
+#include <thread>
 
 #include <api/controller/vsapi.hpp>
 #include <api/controller/auth.hpp>
@@ -21,8 +21,11 @@ public:
 /// @param host Hostname to bind
 /// @param port Port to bind
 /// @param startLoop Defines whenever main loop will be started from the creation of videoserver instance or later.
-Videoserver(const std::string &host, int port, bool HTTPnonblocking = false, bool HTTPmultithreaded = true, bool GSTstartLoop = false);
+Videoserver(const std::string &host, int port);
 ~Videoserver();
+
+void run();
+void runServer();
 
 /// @brief Start glib main loop
 void runMainLoop();
@@ -30,22 +33,13 @@ void runMainLoop();
 /// @brief Stops glib main loop
 void stopMainLoop();
 
+// Creates source if not exist
+// Gets created source if exists
 std::shared_ptr<Source> openSource(const std::string& source);
 
 /// @brief Allows to get current GST main loop
 /// @return  GMainLoop* GST Main loop
-GMainLoop *getGSTMainLoop() const;
-
-
-// ----- JSON manipulation -----
-
-/// @brief Deserialize object (nlohmann)
-/// @param object JSON object
-void from_json(const nlohmann::json& object);
-
-/// @brief Serialize object (nlohmann)
-/// @param object JSON object
-void to_json(nlohmann::json& object) const;
+GMainLoop *getMainLoop() const;
 
 static Accelerator accelerator;
 
@@ -53,6 +47,7 @@ private:
 // --- GStreamer params ---
 GMainLoop *mainLoop;
 std::unordered_map<std::string, std::shared_ptr<Source>> aliveSources;
+std::thread loopThread;
 
 // --- HTTP server params
 std::string host;

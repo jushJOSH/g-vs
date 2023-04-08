@@ -4,17 +4,16 @@
 
 class ScreenshotBranch : public PipeBranch { 
 public:
-    ScreenshotBranch(const std::string &screenPath);
+    ScreenshotBranch(const std::string &path);
+    ScreenshotBranch(GstBin* bin, const std::string &path);
     //~ScreenshotBranch();
 
     GstPad* getNewPad(DataLine::LineType type);
+    std::string getPath() const;
 
-    static void makeSnapshot(GstBuffer* buffer, GstMapInfo info);
     bool loadBin(GstBin *bin);
     void unloadBin();
 
-private:
-    static void onNewSample(GstElement* src, gpointer arg);
-    
+private: 
     std::string path;
 };

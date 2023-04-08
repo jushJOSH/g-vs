@@ -10,6 +10,12 @@
 class DataLine
 {
 public:
+    struct Resolution
+    {
+        int width;
+        int height;
+    };
+
     enum class LineType {
         Video, Audio
     };

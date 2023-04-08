@@ -14,7 +14,7 @@ class ConfigDto : public oatpp::DTO {
     DTO_FIELD(String, dbConnectionString);
     DTO_FIELD(String, secretPath) = "/home/egor/g-vs/real/secret.pem";
     DTO_FIELD(String, issuer) = "vs:jwt-issuer";
-    DTO_FIELD(Boolean, hardware_acceleration) = true;
+    DTO_FIELD(String, hardware_acceleration) = "amd";
 };
 
 #include OATPP_CODEGEN_END(DTO)

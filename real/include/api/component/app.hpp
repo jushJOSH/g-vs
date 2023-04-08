@@ -7,6 +7,7 @@
 #include <oatpp/core/base/CommandLineArguments.hpp>
 
 #include <api/token/jwt.hpp>
+#include <video/videoserver/videoserver.hpp>
 
 #include <cstdlib>
 
@@ -69,5 +70,17 @@ public:
         if (secret == nullptr) throw std::runtime_error("secretPath is non-existing file!");
         
         return std::make_shared<JWT>(secret, config->issuer);
+    }());
+
+    OATPP_CREATE_COMPONENT(std::shared_ptr<Videoserver>, videoserver)([]{
+        OATPP_COMPONENT(oatpp::Object<ConfigDto>, config);
+
+        std::shared_ptr<Videoserver> videoserver = std::make_shared<Videoserver>(config->host, config->port);
+        auto accelerator = config->hardware_acceleration.getValue("cpu");
+        if (accelerator == "amd") videoserver->accelerator = Videoserver::Accelerator::AMD;
+        if (accelerator == "nvidia") videoserver->accelerator = Videoserver::Accelerator::NVIDIA;
+        if (accelerator == "cpu") videoserver->accelerator = Videoserver::Accelerator::CPU;        
+
+        return videoserver;
     }());
 };

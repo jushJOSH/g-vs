@@ -3,7 +3,7 @@
 #include <gst/gst.h>
 #include <gst/app/app.h>
 
-#include <video/source/datalines/dataline.hpp>
+#include <video/source/datalines/data.hpp>
 #include <api/dto/sourceconfig.hpp>
 
 class PipeBranch

@@ -4,9 +4,9 @@
 #include <iostream>
 
 std::shared_ptr<Part> MPStreamer::readNextPart(oatpp::async::Action& action) {
-    source->waitSample();
+    branch->waitSample();
     try {
-        auto sample = source->getSample();
+        auto sample = branch->getSample();
         auto buffer = gst_sample_get_buffer(*sample);
         GstMapInfo bufferMap;
         bool success = gst_buffer_map(buffer, &bufferMap, GST_MAP_READ);

@@ -1,22 +1,12 @@
 #include <video/source/source.hpp>
+#include <video/source/datalines/video.hpp>
 
 #include <atomic>
 
-GstFlowReturn Source::onNewSample(GstElement* appsink, CallbackArg *data)  {
-    GstSample *sample = gst_app_sink_pull_sample(GST_APP_SINK(appsink));
-
-    std::lock_guard<std::mutex> locker(data->mutex);
-    data->samples->push_back(std::make_shared<Sample>(sample));
-
-    return GST_FLOW_OK;
-}
-
 Source::Source() 
-:   uuid(boost::uuids::to_string(boost::uuids::random_generator_mt19937()())),
-    arg(std::make_shared<CallbackArg>())
+:   uuid(boost::uuids::to_string(boost::uuids::random_generator_mt19937()()))
 {   
     g_print("Created source %s\n", uuid.c_str());
-    arg->samples = std::make_shared<boost::circular_buffer<std::shared_ptr<Sample>>>(10);
 }
 
 Source::Source(const std::string &source)
@@ -39,19 +29,6 @@ Source::~Source() {
     g_print("Deleted source %s\n", uuid.c_str());
 }
 
-std::shared_ptr<Sample> Source::getSample() {
-    std::lock_guard<std::mutex> locker(arg->mutex);
-
-    auto copy = arg->samples->front();
-    arg->samples->pop_front();
-
-    return copy;
-}
-
-void Source::waitSample() const {
-    while (!arg->samples->size());
-}
-
 void Source::setConfig(SourceConfigDto& config) {
     sourceElements->setConfig(config);
 }
@@ -60,29 +37,23 @@ std::string Source::getUUID() const {
     return uuid;
 }
 
-std::string Source::runStream(GCallback callback) {
-    auto streamBranch = std::make_shared<StreamBranch>();
-    streamBranch->setCallback(callback, (gpointer)arg.get());
-
+void Source::runStream(std::shared_ptr<StreamBranch> streamBranch) {
     sourceElements->addBranch(streamBranch);
 }
 
-void Source::stopStream(const std::string &name) {
+std::string Source::runArchive(std::shared_ptr<ArchiveBranch> archiveBranch) {
+    sourceElements->addBranch(archiveBranch);
 
+    return archiveBranch->getPath();
 }
 
-std::string Source::runArchive() {
-    auto archiveBranch = std::make_shared<ArchiveBranch>("/home/egor/test.mp4");
-}
+std::string Source::makeScreenshot(std::shared_ptr<ScreenshotBranch> branch) {
+    auto &datalines = sourceElements->getDatalines();
+    auto found = std::find_if(datalines.begin(), datalines.end(), [](std::shared_ptr<DataLine>& elem){
+        return elem->getType() == DataLine::LineType::Video;
+    });
+    if (found == datalines.end()) return "";
 
-void Source::stopArchive(const std::string& name) {
-
-}
-
-std::string Source::runScreenshot() {
-    auto screenshotBranch = std::make_shared<ScreenshotBranch>("/home/egor/test.png");
-}
-
-void Source::stopScreenshot(const std::string& name) {
-
+    auto videoline = std::reinterpret_pointer_cast<VideoLine>(*found);    
+    return videoline->makeScreenshot(branch) ? branch->getPath() : "";
 }

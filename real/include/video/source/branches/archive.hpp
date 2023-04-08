@@ -8,6 +8,7 @@ public:
     //~ArchiveBranch();
 
     GstPad* getNewPad(DataLine::LineType type);
+    std::string getPath() const;
 
     bool loadBin(GstBin *bin);
     void unloadBin();

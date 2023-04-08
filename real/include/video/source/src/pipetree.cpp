@@ -1,7 +1,7 @@
 #include <video/source/pipetree.hpp>
 
-#include <video/source/datalines/audioline.hpp>
-#include <video/source/datalines/videoline.hpp>
+#include <video/source/datalines/audio.hpp>
+#include <video/source/datalines/video.hpp>
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
@@ -272,4 +272,8 @@ void PipeTree::mute(bool state) {
 
 void PipeTree::setConfig(SourceConfigDto& config) {
     padinfo.config = config;
+}
+
+std::vector<std::shared_ptr<DataLine>> &PipeTree::getDatalines() {
+    return padinfo.datalines;
 }

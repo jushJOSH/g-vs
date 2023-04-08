@@ -14,17 +14,10 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
-#include <boost/circular_buffer.hpp>
 
 class PipeTree;
 
 class Source {
-protected: 
-    struct CallbackArg {
-        std::mutex mutex;
-        std::shared_ptr<boost::circular_buffer<std::shared_ptr<Sample>>> samples;
-    };
-
 public:
     // Test consturctor for source
     Source();
@@ -35,30 +28,27 @@ public:
     // Get/Set things
     std::string getUUID() const;
     GstStateChangeReturn setState(GstState state = GST_STATE_PLAYING);
+    std::shared_ptr<StreamBranch::CallbackArg> getArg();
     void setConfig(SourceConfigDto& config);
 
     // Branch management
     // Stream
-    std::string runStream(GCallback callback);
-    void stopStream(const std::string& name);
+    void runStream(std::shared_ptr<StreamBranch> branch);
 
     // Archive
-    std::string runArchive();
-    void stopArchive(const std::string &name);
+    std::string runArchive(std::shared_ptr<ArchiveBranch> branch);
     
     // Screenshot
-    std::string runScreenshot();
-    void stopScreenshot(const std::string &name);
+    std::string makeScreenshot(std::shared_ptr<ScreenshotBranch> branch);
     
     // Sample things
     std::shared_ptr<Sample> getSample();
     void waitSample() const;
-    static GstFlowReturn onNewSample(GstElement* appsink, CallbackArg *data);
-
+    static GstFlowReturn onNewSample(GstElement* appsink, StreamBranch::CallbackArg *data);
+    
 protected:
     std::string source;
 
     std::string uuid;
     std::shared_ptr<PipeTree> sourceElements;
-    std::shared_ptr<CallbackArg> arg;
 };
