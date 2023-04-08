@@ -37,23 +37,29 @@ std::string Source::getUUID() const {
     return uuid;
 }
 
-void Source::runStream(std::shared_ptr<StreamBranch> streamBranch) {
+std::shared_ptr<StreamBranch> Source::runStream() {
+    auto streamBranch = std::make_shared<StreamBranch>();
     sourceElements->addBranch(streamBranch);
+
+    return streamBranch;
 }
 
-std::string Source::runArchive(std::shared_ptr<ArchiveBranch> archiveBranch) {
+std::shared_ptr<ArchiveBranch> Source::runArchive(const std::string &path) {
+    auto archiveBranch = std::make_shared<ArchiveBranch>(path);
     sourceElements->addBranch(archiveBranch);
 
-    return archiveBranch->getPath();
+    return archiveBranch;
 }
 
-std::string Source::makeScreenshot(std::shared_ptr<ScreenshotBranch> branch) {
+std::shared_ptr<ScreenshotBranch> Source::makeScreenshot(const std::string &path) {
+    auto screenshotBranch = std::make_shared<ScreenshotBranch>(path);
     auto &datalines = sourceElements->getDatalines();
     auto found = std::find_if(datalines.begin(), datalines.end(), [](std::shared_ptr<DataLine>& elem){
         return elem->getType() == DataLine::LineType::Video;
     });
-    if (found == datalines.end()) return "";
+    if (found == datalines.end()) return nullptr;
 
-    auto videoline = std::reinterpret_pointer_cast<VideoLine>(*found);    
-    return videoline->makeScreenshot(branch) ? branch->getPath() : "";
+    auto videoline = std::reinterpret_pointer_cast<VideoLine>(*found);
+    return screenshotBranch;   
+    return videoline->makeScreenshot(screenshotBranch) ? screenshotBranch : nullptr;
 }

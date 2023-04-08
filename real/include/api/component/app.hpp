@@ -75,7 +75,7 @@ public:
     OATPP_CREATE_COMPONENT(std::shared_ptr<Videoserver>, videoserver)([]{
         OATPP_COMPONENT(oatpp::Object<ConfigDto>, config);
 
-        std::shared_ptr<Videoserver> videoserver = std::make_shared<Videoserver>(config->host, config->port);
+        std::shared_ptr<Videoserver> videoserver = std::make_shared<Videoserver>();
         auto accelerator = config->hardware_acceleration.getValue("cpu");
         if (accelerator == "amd") videoserver->accelerator = Videoserver::Accelerator::AMD;
         if (accelerator == "nvidia") videoserver->accelerator = Videoserver::Accelerator::NVIDIA;

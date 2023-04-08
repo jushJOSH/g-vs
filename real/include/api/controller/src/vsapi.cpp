@@ -1,14 +1,15 @@
 #include <api/controller/vsapi.hpp>
-#include <video/source/source.hpp>
+#include <video/videoserver/videoserver.hpp>
 
 #include <oatpp/web/protocol/http/outgoing/MultipartBody.hpp>
 
 VSTypes::OatResponse VsapiController::getLive() {
-    auto newSource = std::make_shared<Source>();
-    auto stateResult = newSource->setState();
+    OATPP_COMPONENT(std::shared_ptr<Videoserver>, videoserver);
+    auto source = videoserver->openSource("rtsp://193.19.103.188:1935/live/Pl_Lunincev.stream");
+    auto stateResult = source->setState();
     g_print("Status %d\n", stateResult);
 
-    auto multipart = std::make_shared<MPStreamer>(newSource);
+    auto multipart = std::make_shared<MPStreamer>(source->runStream());
     auto body = std::make_shared<oatpp::web::protocol::http::outgoing::MultipartBody>(
         multipart,
         "application/octet-stream",

@@ -9,6 +9,8 @@
 #include <api/controller/auth.hpp>
 #include <api/controller/users.hpp>
 
+#include <oatpp/core/base/CommandLineArguments.hpp>
+
 class Videoserver {
 public:
 // Hardware accelerator
@@ -18,14 +20,9 @@ enum class Accelerator {
 
 public:
 /// @brief Videoserver HTTP constructor
-/// @param host Hostname to bind
-/// @param port Port to bind
-/// @param startLoop Defines whenever main loop will be started from the creation of videoserver instance or later.
-Videoserver(const std::string &host, int port);
+/// @param accelerator Which hardware accelerator to use
+Videoserver(Accelerator accelerator = Accelerator::CPU);
 ~Videoserver();
-
-void run();
-void runServer();
 
 /// @brief Start glib main loop
 void runMainLoop();
@@ -48,8 +45,4 @@ private:
 GMainLoop *mainLoop;
 std::unordered_map<std::string, std::shared_ptr<Source>> aliveSources;
 std::thread loopThread;
-
-// --- HTTP server params
-std::string host;
-int port;
 };

@@ -33,18 +33,17 @@ public:
 
     // Branch management
     // Stream
-    void runStream(std::shared_ptr<StreamBranch> branch);
+    std::shared_ptr<StreamBranch> runStream();
 
     // Archive
-    std::string runArchive(std::shared_ptr<ArchiveBranch> branch);
+    std::shared_ptr<ArchiveBranch> runArchive(const std::string &path);
     
     // Screenshot
-    std::string makeScreenshot(std::shared_ptr<ScreenshotBranch> branch);
+    std::shared_ptr<ScreenshotBranch> makeScreenshot(const std::string &path);
     
     // Sample things
     std::shared_ptr<Sample> getSample();
     void waitSample() const;
-    static GstFlowReturn onNewSample(GstElement* appsink, StreamBranch::CallbackArg *data);
     
 protected:
     std::string source;

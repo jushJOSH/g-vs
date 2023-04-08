@@ -36,9 +36,8 @@
 
 #include <thread>
 
-void run(const oatpp::base::CommandLineArguments& args) {
-    std::thread serverThread([args]{
-        AppComponent appComponent(args);
+void runApi() {
+    std::thread serverThread([]{
         ServiceComponent serviceComponent;
         DatabaseComponent databaseComponent;
 
@@ -61,17 +60,26 @@ void run(const oatpp::base::CommandLineArguments& args) {
     serverThread.detach();
 }
 
+void runVideo() {
+    OATPP_COMPONENT(std::shared_ptr<Videoserver>, videoserver);
+    OATPP_LOGD("Video", "Video loop is running");
+    videoserver->runMainLoop();
+    videoserver->stopMainLoop();
+}
+
 int main(int argc, char **argv) {
-    // TEMP
-    /* Создание и запуск главного цикла GStreamer */
-    /* Initialize GStreamer */
     gst_init(&argc, &argv);
-    //g_main_loop_run(loop);
 
     oatpp::base::Environment::init();
-    run(oatpp::base::CommandLineArguments(argc, (const char**)argv));
-    auto loop = g_main_loop_new(NULL, false);
-    g_main_loop_run(loop);
+
+    // Init app component
+    auto parsedArgs = oatpp::base::CommandLineArguments(argc, (const char**)argv);
+    AppComponent appComponent(parsedArgs);
+
+    // Run api and video parts
+    runApi();
+    runVideo();
+
     oatpp::base::Environment::destroy();
 
     return 0;

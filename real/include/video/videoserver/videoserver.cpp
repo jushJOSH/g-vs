@@ -1,19 +1,23 @@
 #include <video/videoserver/videoserver.hpp>
 
+#include <oatpp/network/Server.hpp>
+
+#include <api/component/app.hpp>
+#include <api/component/database.hpp>
+#include <api/component/service.hpp>
+
 Videoserver::Accelerator Videoserver::accelerator = Videoserver::Accelerator::CPU;
 
-Videoserver::Videoserver(const std::string &host, int port) 
+Videoserver::Videoserver(Accelerator accelerator) 
 : 
-    // HTTP Params
-    host(host), port(port),
-
     // GStreamer params
     mainLoop(g_main_loop_new(nullptr, false))
-{}
+{
+    this->accelerator = accelerator;
+}
 
 void Videoserver::runMainLoop() {
-    loopThread = std::thread(g_main_loop_run, this->mainLoop);
-    loopThread.detach();
+    g_main_loop_run(this->mainLoop);
 }
 
 void Videoserver::stopMainLoop() {
@@ -34,34 +38,4 @@ std::shared_ptr<Source> Videoserver::openSource(const std::string& source) {
         aliveSources[source] = std::make_shared<Source>(source);
         
     return aliveSources.at(source);
-}
-
-void Videoserver::runServer() {
-    std::thread serverThread([args]{
-        AppComponent appComponent(args);
-        ServiceComponent serviceComponent;
-        DatabaseComponent databaseComponent;
-
-        /* create ApiControllers and add endpoints to router */
-        auto router = serviceComponent.httpRouter.getObject();
-        router->addController(AuthController::createShared());
-        router->addController(UserController::createShared());
-        router->addController(VsapiController::createShared());
-
-        /* create server */
-
-        oatpp::network::Server server(serviceComponent.serverConnectionProvider.getObject(),
-                                        serviceComponent.serverConnectionHandler.getObject());
-
-        OATPP_LOGD("Server", "Running on port %s...", serviceComponent.serverConnectionProvider.getObject()->getProperty("port").toString()->c_str());
-
-        server.run();
-    });
-
-    serverThread.detach();
-}
-
-void Videoserver::run() {
-    runServer();
-    runMainLoop();
 }
