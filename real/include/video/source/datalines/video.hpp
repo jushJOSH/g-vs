@@ -21,12 +21,16 @@ public:
     void loadBin(GstBin *bin);
     void unloadBin();
 
+    bool attachToPipeline(GstElement *before);
+    GstPadLinkReturn attachToPipeline(GstPad *before);
+    void detachFromPipeline(GstElement *before);
+    bool detachFromPipeline(GstPad *before);
+    
+    GstElement *getFirstElement() const;
     GstElement *getEncoder() const;
     GstElement *getScale() const;
     GstElement *getRate() const;
-
-    bool makeScreenshot(std::shared_ptr<ScreenshotBranch> &branch);
-
+    
     static Resolution strToResolution(const std::string &resolution_s, char separator = 'x');
 
 private:
@@ -36,8 +40,5 @@ private:
     GstElement *videoconverter;
     GstElement *videoscale;
     GstElement *videorate;
-
-    GstElement *enctee;
     GstElement *videoencoder;
-    GstElement *picencoder;
 };

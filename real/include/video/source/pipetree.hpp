@@ -5,6 +5,7 @@
 
 #include <unordered_map>
 #include <queue>
+#include <vector>
 
 #include <video/source/branches/branch.hpp>
 #include <video/source/datalines/data.hpp>
@@ -25,6 +26,7 @@ private:
         std::vector<std::shared_ptr<DataLine>> datalines;
         std::queue<std::shared_ptr<PipeBranch>> branchQueue;
         std::unordered_map<std::string, std::shared_ptr<PipeBranch>> branches;
+        std::vector<std::pair<std::string, GstPad*>> createdPads;
         bool noMorePads = false;
     };
 
@@ -58,6 +60,7 @@ private:
     static void onErrorCallback(GstBus *bus, GstMessage *msg, gpointer data);
     static int manageBranchQueue(PadInfo& data);
     static void onNoMorePads(GstElement* src, PadInfo* data);
+    static std::shared_ptr<DataLine> createDataline(const std::pair<std::string, GstPad*> &pad, const PadInfo &userData);
 
 private:
     // Map of 'name' of branch and branch itself

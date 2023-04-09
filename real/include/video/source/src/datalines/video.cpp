@@ -20,9 +20,7 @@ VideoLine::VideoLine(
     videoconverter(gst_element_factory_make("videoconvert", str(format("%1%_videoconvert") % uuid).c_str())),
     videoscale(gst_element_factory_make("videoscale", str(format("%1%_videoscale") % uuid).c_str())),
     videorate(gst_element_factory_make("videorate", str(format("%1%_videorate") % uuid).c_str())),
-    videoencoder(createEncoder()),
-    enctee(gst_element_factory_make("tee", str(format("%1%_tee") % uuid).c_str())),
-    picencoder(gst_element_factory_make("pngenc", str(format("%1%_pngenc") % uuid).c_str()))
+    videoencoder(createEncoder())
 {
     g_print("Created videoline %s\n", uuid.c_str());
 }
@@ -39,33 +37,13 @@ VideoLine::VideoLine(
 
     g_print("%s - linking elements together!\n", uuid.c_str());
     bool isLinkedOk = 
-        gst_element_link(this->queue, this->videoconverter) &&
         gst_element_link(this->videoconverter, this->videoscale) &&
         gst_element_link(this->videoscale, this->videorate) &&
-        gst_element_link(this->videorate, this->enctee) &&
+        gst_element_link(this->videorate, this->videoencoder) &&
         gst_element_link(this->videoencoder, this->tee);
-
-    auto teeVideoPad = gst_element_get_request_pad(this->enctee, "src_%u");
-    auto teeSnapPad = gst_element_get_request_pad(this->enctee, "src_%u");
-    auto padPicEncoder = gst_element_get_static_pad(this->picencoder, "sink");
-    auto padVideoEncoder = gst_element_get_static_pad(this->videoencoder, "sink");
-    
-    isLinkedOk = isLinkedOk &&
-                 gst_pad_link(teeVideoPad, padVideoEncoder) == GstPadLinkReturn::GST_PAD_LINK_OK &&
-                 gst_pad_link(teeSnapPad, padPicEncoder) == GstPadLinkReturn::GST_PAD_LINK_OK;
 
     if (!isLinkedOk) 
         throw std::runtime_error("VideoLine: Failed creation of videoline for some reason\n");
-
-    g_object_set(this->picencoder, "snapshot", true, NULL);
-}
-
-bool VideoLine::makeScreenshot(std::shared_ptr<ScreenshotBranch> &branch) {
-    if (!gst_element_link(this->picencoder, branch->getSink())) return false;
-
-    auto stateChangeResult = gst_element_set_state(this->picencoder, GstState::GST_STATE_PLAYING);
-
-    return stateChangeResult != GstStateChangeReturn::GST_STATE_CHANGE_FAILURE;
 }
 
 void VideoLine::loadBin(GstBin* bin) {
@@ -73,12 +51,22 @@ void VideoLine::loadBin(GstBin* bin) {
     if (this->bin != nullptr) return;
     
     this->bin = bin;
-    gst_bin_add_many(this->bin, this->tee, this->queue, this->videoconverter, this->videoscale, this->videorate, this->videoencoder, this->enctee, this->picencoder, NULL);
+    gst_bin_add_many(this->bin, 
+                     this->videoconverter, 
+                     this->videoscale, 
+                     this->videorate, 
+                     this->videoencoder, 
+                     this->tee, NULL);
 }
 
 void VideoLine::unloadBin() {
-    gst_element_send_event(this->queue, gst_event_new_eos());
-    gst_bin_remove_many(this->bin, this->queue, this->videoconverter, this->videoscale, this->videorate, this->videoencoder, this->picencoder, this->enctee, NULL);
+    gst_element_send_event(this->videoconverter, gst_event_new_eos());
+    gst_bin_remove_many(this->bin, 
+                        this->videoconverter, 
+                        this->videoscale,
+                        this->videorate,
+                        this->videoencoder,
+                        this->tee, NULL);
 }
 
 GstElement* VideoLine::getEncoder() const {
@@ -121,4 +109,28 @@ GstElement* VideoLine::getRate() const {
 
 GstElement* VideoLine::getScale() const {
     return this->videoscale;
+}
+
+bool VideoLine::attachToPipeline(GstElement* before) {
+    return gst_element_link(before, this->videoconverter);
+}
+
+GstPadLinkReturn VideoLine::attachToPipeline(GstPad* before) {
+    g_print("VideoLine: Attaching to pipeline\n");
+
+    auto queueSink = gst_element_get_static_pad(this->videoconverter, "sink");
+    return gst_pad_link(before, queueSink);
+}
+
+void VideoLine::detachFromPipeline(GstElement* before) {
+    gst_element_unlink(before, this->videoconverter);
+}
+
+bool VideoLine::detachFromPipeline(GstPad* before) {
+    auto queueSink = gst_element_get_static_pad(this->videoconverter, "sink");
+    return gst_pad_unlink(before, queueSink);
+}
+
+GstElement* VideoLine::getFirstElement() const {
+    return this->videoconverter;
 }

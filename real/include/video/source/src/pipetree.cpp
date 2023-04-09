@@ -60,6 +60,34 @@ void PipeTree::onErrorCallback(GstBus *bus, GstMessage *msg, gpointer data) {
     g_free (debug_info);
 }
 
+std::shared_ptr<DataLine> PipeTree::createDataline(const std::pair<std::string, GstPad*> &pad, const PadInfo &userData) {
+    g_print("PipeTree: creating new dataline\n");
+    
+    std::shared_ptr<DataLine> newLine;
+    auto &[type, g_pad] = pad;
+
+    if (type == "audio/x-raw") {
+        newLine = std::make_shared<AudioLine>(
+            userData.bin,
+            userData.config.audioencoding,
+            userData.config.quality,
+            userData.config.volume);
+        g_object_set(std::reinterpret_pointer_cast<AudioLine>(newLine)->getVolume(), "mute", userData.config.mute, NULL);
+    }
+    else if (type == "video/x-raw") {
+        newLine = std::make_shared<VideoLine>(
+            userData.bin,
+            userData.config.videoencoding,
+            VideoLine::strToResolution(userData.config.resolution),
+            userData.config.fps,
+            userData.config.bitrate
+        );
+    }
+    else newLine = nullptr;
+
+    return newLine;
+}
+
 int PipeTree::manageBranchQueue(PadInfo& data) {
     g_print("PipeTree: Started queue management\n");
 
@@ -72,7 +100,10 @@ int PipeTree::manageBranchQueue(PadInfo& data) {
         if (!loadResult)
             continue;
         
-        for (auto &dataline : data.datalines) {
+        for (auto &pad : data.createdPads) {
+            g_print("PipeTree: creating %s dataline\n", pad.first.c_str());
+
+            auto dataline = createDataline(pad, data);
             auto newTeePad = gst_element_get_request_pad(dataline->getTee(), "src_%u");
             auto newBranchPad = branch->getNewPad(dataline->getType());
 
@@ -80,9 +111,18 @@ int PipeTree::manageBranchQueue(PadInfo& data) {
 
             if (gst_pad_is_linked(newBranchPad)) break;
 
-            auto linkResult = gst_pad_link(newTeePad, newBranchPad);
-            if (linkResult != GstPadLinkReturn::GST_PAD_LINK_OK)
+            auto branchLinkResult = gst_pad_link(newTeePad, newBranchPad);
+            if (branchLinkResult != GstPadLinkReturn::GST_PAD_LINK_OK) {
+                g_print("PipeTree: failed to link dataline and branch\n");
                 continue;
+            }
+
+            auto sourceLinkresult = dataline->attachToPipeline(pad.second);
+            if (sourceLinkresult != GstPadLinkReturn::GST_PAD_LINK_OK)
+            {
+                g_print("PipeTree: failed to link dataline and uribindecode\n");
+                continue;
+            }
         }
 
         successfulCount++;
@@ -96,6 +136,8 @@ int PipeTree::manageBranchQueue(PadInfo& data) {
 void PipeTree::onNoMorePads(GstElement* src, PadInfo* data) {
     data->noMorePads = true;
     manageBranchQueue(*data);
+
+    gst_element_set_state(GST_ELEMENT(data->bin), GST_STATE_PLAYING);
 }
 
 void PipeTree::onNewPad(GstElement* element, GstPad* newPad, PadInfo* userData) {
@@ -109,31 +151,33 @@ void PipeTree::onNewPad(GstElement* element, GstPad* newPad, PadInfo* userData) 
     GstStructure *pad_struct = gst_caps_get_structure (pad_caps, 0);
     const gchar *pad_type = gst_structure_get_name (pad_struct);
     if (g_str_has_prefix (pad_type, "audio/x-raw")) {
-        newLine = std::make_shared<AudioLine>(
-            userData->bin,
-            userData->config.audioencoding,
-            userData->config.quality,
-            userData->config.volume);
-        g_object_set(std::reinterpret_pointer_cast<AudioLine>(newLine)->getVolume(), "mute", userData->config.mute, NULL);
+        userData->createdPads.push_back({"audio/x-raw", newPad});
+        // newLine = std::make_shared<AudioLine>(
+        //     userData->bin,
+        //     userData->config.audioencoding,
+        //     userData->config.quality,
+        //     userData->config.volume);
+        // g_object_set(std::reinterpret_pointer_cast<AudioLine>(newLine)->getVolume(), "mute", userData->config.mute, NULL);
     }
     else if (g_str_has_prefix(pad_type, "video/x-raw")) {
-        newLine = std::make_shared<VideoLine>(
-            userData->bin,
-            userData->config.videoencoding,
-            VideoLine::strToResolution(userData->config.resolution),
-            userData->config.fps,
-            userData->config.bitrate
-        );
+        userData->createdPads.push_back({"video/x-raw", newPad});
+        // newLine = std::make_shared<VideoLine>(
+        //     userData->bin,
+        //     userData->config.videoencoding,
+        //     VideoLine::strToResolution(userData->config.resolution),
+        //     userData->config.fps,
+        //     userData->config.bitrate
+        // );
     }
     else return;
+    
+    // // Linking pad
+    // if (newLine->attachToPipeline(newPad) != GstPadLinkReturn::GST_PAD_LINK_OK) {
+    //     g_print ("Type is '%s' but link failed.\n", pad_type);
+    //     return;
+    // } else g_print ("Link succeeded (type '%s').\n", pad_type);
 
-    // Linking pad
-    if (newLine->attachToPipeline(newPad) != GstPadLinkReturn::GST_PAD_LINK_OK) {
-        g_print ("Type is '%s' but link failed.\n", pad_type);
-        return;
-    } else g_print ("Link succeeded (type '%s').\n", pad_type);
-
-    userData->datalines.push_back(newLine);
+    // userData->datalines.push_back(newLine);
     // Unreference the new pad's caps, if we got them
     if (pad_caps != NULL)
         gst_caps_unref (pad_caps);

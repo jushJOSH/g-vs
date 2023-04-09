@@ -15,9 +15,15 @@ public:
     AudioLine(const std::string& encoder, double quality, double volume);
     AudioLine(GstBin *bin, const std::string& encoder, double quality, double volume);
 
+    bool attachToPipeline(GstElement *before);
+    GstPadLinkReturn attachToPipeline(GstPad *before);
+    void detachFromPipeline(GstElement *before);
+    bool detachFromPipeline(GstPad *before);
+
     void loadBin(GstBin *bin);
     void unloadBin();
 
+    GstElement *getFirstElement() const;
     GstElement *getEncoder() const;
     GstElement *getVolume() const;
 

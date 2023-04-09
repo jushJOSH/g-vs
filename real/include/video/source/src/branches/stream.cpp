@@ -17,7 +17,8 @@ StreamBranch::StreamBranch()
 :   PipeBranch(
         "appsink",
         "multipartmux"
-    )
+    ),
+    arg(std::make_shared<CallbackArg>())
 {
     g_print("Created stream branch %s\n", uuid.c_str());
     arg->samples = std::make_shared<boost::circular_buffer<std::shared_ptr<Sample>>>(10);
@@ -38,21 +39,11 @@ void StreamBranch::unloadBin() {
 }
 
 GstPad* StreamBranch::getNewPad(DataLine::LineType type) {
-    switch(type) {
-        case DataLine::LineType::Audio:
-        g_print("StreamBranch: Getting new audio pad\n");
-        return gst_element_get_request_pad(muxer, "audio_%u");
-
-        case DataLine::LineType::Video:
-        g_print("StreamBranch: Getting new video pad\n");
-        return gst_element_get_request_pad(muxer, "video_%u");
-
-        default:
-        return nullptr;
-    }
+    return gst_element_get_request_pad(muxer, "sink_%u");
 }
 
 void StreamBranch::setCallback(GCallback callback) {
+    g_print("StreamBranch: Setting callback\n");
     g_signal_connect(sink, "new-sample", callback, arg.get());
 }
 
@@ -70,6 +61,7 @@ void StreamBranch::waitSample() const {
 }
 
 GstFlowReturn StreamBranch::onNewSample(GstElement* appsink, CallbackArg *data)  {
+    g_print("StreamBranch: new sample\n");
     GstSample *sample = gst_app_sink_pull_sample(GST_APP_SINK(appsink));
 
     std::lock_guard<std::mutex> locker(data->mutex);

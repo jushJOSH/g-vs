@@ -38,8 +38,6 @@ public:
     // Archive
     std::shared_ptr<ArchiveBranch> runArchive(const std::string &path);
     
-    // Screenshot
-    std::shared_ptr<ScreenshotBranch> makeScreenshot(const std::string &path);
     
     // Sample things
     std::shared_ptr<Sample> getSample();

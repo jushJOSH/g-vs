@@ -39,6 +39,7 @@ std::string Source::getUUID() const {
 
 std::shared_ptr<StreamBranch> Source::runStream() {
     auto streamBranch = std::make_shared<StreamBranch>();
+    streamBranch->setCallback(G_CALLBACK(StreamBranch::onNewSample));
     sourceElements->addBranch(streamBranch);
 
     return streamBranch;
@@ -49,17 +50,4 @@ std::shared_ptr<ArchiveBranch> Source::runArchive(const std::string &path) {
     sourceElements->addBranch(archiveBranch);
 
     return archiveBranch;
-}
-
-std::shared_ptr<ScreenshotBranch> Source::makeScreenshot(const std::string &path) {
-    auto screenshotBranch = std::make_shared<ScreenshotBranch>(path);
-    auto &datalines = sourceElements->getDatalines();
-    auto found = std::find_if(datalines.begin(), datalines.end(), [](std::shared_ptr<DataLine>& elem){
-        return elem->getType() == DataLine::LineType::Video;
-    });
-    if (found == datalines.end()) return nullptr;
-
-    auto videoline = std::reinterpret_pointer_cast<VideoLine>(*found);
-    return screenshotBranch;   
-    return videoline->makeScreenshot(screenshotBranch) ? screenshotBranch : nullptr;
 }
