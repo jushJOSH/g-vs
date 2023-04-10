@@ -21,13 +21,6 @@ PipeBranch::PipeBranch(const std::string &sink, const std::string &muxer)
     g_print("Branch created %s\n", uuid.c_str());
 }
 
-PipeBranch::PipeBranch(GstBin* bin, const std::string &sink, const std::string &muxer) 
-:   PipeBranch(sink, muxer)
-{
-    if (!loadBin(bin))
-        throw std::runtime_error("PipeBranch: failed to link queue and decodebin");
-}
-
 GstElement* PipeBranch::getSink() const {
     return this->sink;
 }
@@ -40,23 +33,6 @@ void PipeBranch::setSink(GstElement* sink) {
     this->sink = sink;
 }
 
-bool PipeBranch::loadBin(GstBin *bin) {
-    if (!this->bin)
-        this->bin = bin;
-
-    gst_bin_add_many(bin, sink, NULL);
-    if (this->muxer) gst_bin_add(bin, muxer);
-    
-    return 
-        this->muxer ? gst_element_link(muxer, sink) : true;
-}
-
-void PipeBranch::unloadBin() {
-    gst_bin_remove_many(bin, sink, NULL);
-    if (this->muxer) gst_bin_remove(bin, muxer);
-    bin = nullptr;
-}
-
 GstBin*  PipeBranch::getBin() const {
     return bin;
 }
@@ -67,4 +43,8 @@ GstStateChangeReturn PipeBranch::setState(GstState state) {
 
 std::string PipeBranch::getUUID() const {
     return uuid;
+}
+
+GstElement *PipeBranch::getMuxer() const {
+    return muxer;
 }

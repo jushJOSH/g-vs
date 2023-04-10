@@ -51,3 +51,7 @@ std::shared_ptr<ArchiveBranch> Source::runArchive(const std::string &path) {
 
     return archiveBranch;
 }
+
+void Source::removeBranch(std::shared_ptr<PipeBranch> branch) {
+    sourceElements->removeBranch(branch->getUUID());
+}

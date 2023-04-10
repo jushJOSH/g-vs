@@ -13,6 +13,7 @@ using boost::str;
 DataLine::DataLine(LineType type, const std::string &encoder)
 :   uuid(boost::uuids::to_string(boost::uuids::random_generator_mt19937()())),
     encoder_s(encoder),
+    queue(gst_element_factory_make("queue", str(format("%1%_queue") % uuid).c_str())),
     tee(gst_element_factory_make("tee", str(format("%1%_tee") % uuid).c_str())),
     type(type)
 {

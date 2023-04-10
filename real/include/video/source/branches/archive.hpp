@@ -5,6 +5,7 @@
 class ArchiveBranch : public PipeBranch {
 public:
     ArchiveBranch(const std::string &path);
+    ArchiveBranch(GstBin* bin, const std::string &path);
     //~ArchiveBranch();
 
     GstPad* getNewPad(DataLine::LineType type);

@@ -47,4 +47,5 @@ protected:
 
     GstBin *bin = nullptr;
     GstElement *tee;
+    GstElement *queue;
 };

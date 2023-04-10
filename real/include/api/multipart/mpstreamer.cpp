@@ -1,7 +1,8 @@
 #include <api/multipart/mpstreamer.hpp>
 
+#include <oatpp/core/macro/component.hpp>
+
 #include <thread>
-#include <iostream>
 
 std::shared_ptr<Part> MPStreamer::readNextPart(oatpp::async::Action& action) {
     branch->waitSample();
@@ -28,4 +29,8 @@ std::shared_ptr<Part> MPStreamer::readNextPart(oatpp::async::Action& action) {
 
 void MPStreamer::writeNextPart(const std::shared_ptr<Part>& part, oatpp::async::Action& action) {
     OATPP_LOGE("MPStreamer", "WRITE action requested 0^0");
+}
+
+MPStreamer::~MPStreamer() {
+    source->removeBranch(branch);
 }

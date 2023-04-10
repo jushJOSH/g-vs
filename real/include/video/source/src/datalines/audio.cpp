@@ -31,6 +31,7 @@ AudioLine::AudioLine(
     loadBin(bin);
 
     bool isLinkedOk = 
+        gst_element_link(this->queue, this->audioconverter) &&
         gst_element_link(this->audioconverter, this->volume) &&
         gst_element_link(this->volume, this->audioencoder) &&
         gst_element_link(this->audioencoder, this->tee);
@@ -50,12 +51,23 @@ void AudioLine::loadBin(GstBin* bin) {
     if (this->bin != nullptr) return;
     
     this->bin = bin;
-    gst_bin_add_many(this->bin, this->tee, this->audioconverter, this->audioconverter, this->volume, this->audioencoder, NULL);
+    gst_bin_add_many(this->bin, 
+                     this->queue,
+                     this->tee, 
+                     this->audioconverter, 
+                     this->audioconverter, 
+                     this->volume, 
+                     this->audioencoder, NULL);
 }
 
 void AudioLine::unloadBin() {
-    gst_element_send_event(this->audioconverter, gst_event_new_eos());
-    gst_bin_remove_many(this->bin, this->audioconverter, this->volume, this->audioencoder, NULL);
+    gst_element_send_event(this->queue, gst_event_new_eos());
+    gst_bin_remove_many(this->bin,
+                        this->tee,
+                        this->queue, 
+                        this->audioconverter, 
+                        this->volume, 
+                        this->audioencoder, NULL);
 }
 
 GstElement* AudioLine::getEncoder() const {
@@ -68,26 +80,26 @@ GstElement* AudioLine::getVolume() const {
 
 bool AudioLine::attachToPipeline(GstElement* before) {
     return 
-        gst_element_link(before, this->audioconverter);
+        gst_element_link(before, this->queue);
 }
 
 GstPadLinkReturn AudioLine::attachToPipeline(GstPad* before) {
     g_print("AudioLine: Attaching to pipeline\n");
 
-    auto queueSink = gst_element_get_static_pad(this->audioconverter, "sink");
+    auto queueSink = gst_element_get_static_pad(this->queue, "sink");
     return gst_pad_link(before, queueSink);
 }
 
 void AudioLine::detachFromPipeline(GstElement* before) {
-    gst_element_unlink(before, this->audioconverter);
+    gst_element_unlink(before, this->queue);
 }
 
 bool AudioLine::detachFromPipeline(GstPad* before) {
-    auto queueSink = gst_element_get_static_pad(this->audioconverter, "sink");
+    auto queueSink = gst_element_get_static_pad(this->queue, "sink");
     return 
         gst_pad_unlink(before, queueSink);
 }
 
 GstElement* AudioLine::getFirstElement() const {
-    return this->audioconverter;
+    return this->queue;
 }

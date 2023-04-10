@@ -9,7 +9,7 @@ VSTypes::OatResponse VsapiController::getLive() {
     auto stateResult = source->setState();
     g_print("Status %d\n", stateResult);
 
-    auto multipart = std::make_shared<MPStreamer>(source->runStream());
+    auto multipart = std::make_shared<MPStreamer>(source->runStream(), source);
     auto body = std::make_shared<oatpp::web::protocol::http::outgoing::MultipartBody>(
         multipart,
         "application/octet-stream",

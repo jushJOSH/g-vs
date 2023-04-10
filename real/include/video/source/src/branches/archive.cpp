@@ -21,6 +21,13 @@ ArchiveBranch::ArchiveBranch(const std::string &path)
     g_object_set(sink, "location", path.c_str(), NULL);
 }
 
+ArchiveBranch::ArchiveBranch(GstBin* bin, const std::string &path)
+:   ArchiveBranch(path)
+{
+    if (!loadBin(bin))
+        throw std::runtime_error("Could not link elements for some reason...");
+}
+
 bool ArchiveBranch::loadBin(GstBin *bin) {
     if (!this->bin)
         this->bin = bin;

@@ -12,6 +12,7 @@ public:
     };
 
     StreamBranch();
+    StreamBranch(GstBin* bin);
     //~StreamBranch();
 
     GstPad* getNewPad(DataLine::LineType type);

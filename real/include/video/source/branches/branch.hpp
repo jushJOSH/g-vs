@@ -18,12 +18,12 @@ private:
 
 public:
     PipeBranch(const std::string& sink, const std::string& muxer = "");
-    PipeBranch(GstBin* bin, const std::string& sink, const std::string& muxer = "");
     //virtual ~PipeBranch();
 
     // Getters
     virtual GstPad *getNewPad(DataLine::LineType type) = 0;
     GstElement *getSink() const;
+    GstElement *getMuxer() const;
     GstBin* getBin() const;
     std::string getUUID() const;
 

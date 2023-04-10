@@ -96,10 +96,6 @@ int PipeTree::manageBranchQueue(PadInfo& data) {
         auto branch = data.branchQueue.front();
         data.branchQueue.pop();
 
-        bool loadResult = branch->loadBin(data.bin);
-        if (!loadResult)
-            continue;
-        
         for (auto &pad : data.createdPads) {
             g_print("PipeTree: creating %s dataline\n", pad.first.c_str());
 
@@ -215,6 +211,7 @@ PipeTree::~PipeTree() {
 // All branches must be in queue
 // Queue will be solved as soon as noMorePads signal appears
 void PipeTree::addBranch(std::shared_ptr<PipeBranch> branch) {
+    branch->loadBin(GST_BIN(this->pipeline));
     padinfo.branchQueue.push(branch);
 
     // If add branch after pad init
@@ -224,8 +221,18 @@ void PipeTree::addBranch(std::shared_ptr<PipeBranch> branch) {
 }
 
 void PipeTree::removeBranch(const std::string& name) {
-    if (padinfo.branches.contains(name)) 
-        padinfo.branches.erase(name);
+    if (!padinfo.branches.contains(name)) return;
+
+    auto removeBranch = padinfo.branches.at(name);
+    gst_element_send_event(removeBranch->getMuxer(), gst_event_new_eos ());
+    gst_element_set_state(removeBranch->getMuxer(), GstState::GST_STATE_NULL);
+    gst_element_set_state(removeBranch->getSink(), GstState::GST_STATE_NULL);
+
+    for (auto &dataline: padinfo.datalines)
+        gst_element_unlink(dataline->getTee(), removeBranch->getMuxer());
+        
+    removeBranch->unloadBin();
+    padinfo.branches.erase(name);
 }
 
 GstElement* PipeTree::getSink(const std::string &name) {
@@ -238,7 +245,7 @@ void PipeTree::setSource(const std::string &source) {
     this->source = gst_element_factory_make("uridecodebin", str(format("%1%_uridecodebin") % uuid).c_str());
     gst_bin_add(GST_BIN(pipeline), this->source);
     g_object_set(this->source, "uri", source.c_str(), NULL);
-
+    
     g_signal_connect(this->source, "pad-added", G_CALLBACK(onNewPad), &padinfo);
     g_signal_connect(this->source, "no-more-pads", G_CALLBACK(onNoMorePads), &padinfo);
 }

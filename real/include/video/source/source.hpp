@@ -38,11 +38,8 @@ public:
     // Archive
     std::shared_ptr<ArchiveBranch> runArchive(const std::string &path);
     
-    
-    // Sample things
-    std::shared_ptr<Sample> getSample();
-    void waitSample() const;
-    
+    void removeBranch(std::shared_ptr<PipeBranch> branch);
+
 protected:
     std::string source;
 

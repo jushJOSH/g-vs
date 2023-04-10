@@ -24,6 +24,13 @@ StreamBranch::StreamBranch()
     arg->samples = std::make_shared<boost::circular_buffer<std::shared_ptr<Sample>>>(10);
 }
 
+StreamBranch::StreamBranch(GstBin* bin)
+:   StreamBranch()
+{
+    if (!loadBin(bin))
+        throw std::runtime_error("Could not link elements for some reason...");
+}
+
 bool StreamBranch::loadBin(GstBin *bin) {
     if (!this->bin)
         this->bin = bin;
@@ -44,6 +51,8 @@ GstPad* StreamBranch::getNewPad(DataLine::LineType type) {
 
 void StreamBranch::setCallback(GCallback callback) {
     g_print("StreamBranch: Setting callback\n");
+
+    g_object_set(G_OBJECT(sink), "emit-signals", TRUE, NULL);
     g_signal_connect(sink, "new-sample", callback, arg.get());
 }
 
@@ -61,7 +70,6 @@ void StreamBranch::waitSample() const {
 }
 
 GstFlowReturn StreamBranch::onNewSample(GstElement* appsink, CallbackArg *data)  {
-    g_print("StreamBranch: new sample\n");
     GstSample *sample = gst_app_sink_pull_sample(GST_APP_SINK(appsink));
 
     std::lock_guard<std::mutex> locker(data->mutex);
