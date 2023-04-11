@@ -40,8 +40,7 @@ VideoLine::VideoLine(
         gst_element_link(this->queue, this->videoconverter) &&
         gst_element_link(this->videoconverter, this->videoscale) &&
         gst_element_link(this->videoscale, this->videorate) &&
-        gst_element_link(this->videorate, this->videoencoder) &&
-        gst_element_link(this->videoencoder, this->tee);
+        gst_element_link(this->videorate, this->videoencoder);
 
     if (!isLinkedOk) 
         throw std::runtime_error("VideoLine: Failed creation of videoline for some reason\n");
@@ -57,8 +56,7 @@ void VideoLine::loadBin(GstBin* bin) {
                      this->videoconverter, 
                      this->videoscale, 
                      this->videorate, 
-                     this->videoencoder, 
-                     this->tee, NULL);
+                     this->videoencoder, NULL);
 }
 
 void VideoLine::unloadBin() {
@@ -68,8 +66,7 @@ void VideoLine::unloadBin() {
                         this->videoconverter, 
                         this->videoscale,
                         this->videorate,
-                        this->videoencoder,
-                        this->tee, NULL);
+                        this->videoencoder, NULL);
 }
 
 GstElement* VideoLine::getEncoder() const {
@@ -136,4 +133,12 @@ bool VideoLine::detachFromPipeline(GstPad* before) {
 
 GstElement* VideoLine::getFirstElement() const {
     return this->queue;
+}
+
+GstElement *VideoLine::getLastElement() const {
+    return this->videoencoder;
+}
+
+GstPad* VideoLine::generateSrcPad() {
+    return gst_element_get_static_pad(videoencoder, "src");
 }

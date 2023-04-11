@@ -30,7 +30,7 @@ bool ScreenshotBranch::loadBin(GstBin *bin) {
     if (!this->bin)
         this->bin = bin;
 
-    gst_bin_add_many(bin, sink, NULL);
+    gst_bin_add_many(this->bin, sink, NULL);
     
     return true;
 }

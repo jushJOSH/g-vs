@@ -14,7 +14,6 @@ DataLine::DataLine(LineType type, const std::string &encoder)
 :   uuid(boost::uuids::to_string(boost::uuids::random_generator_mt19937()())),
     encoder_s(encoder),
     queue(gst_element_factory_make("queue", str(format("%1%_queue") % uuid).c_str())),
-    tee(gst_element_factory_make("tee", str(format("%1%_tee") % uuid).c_str())),
     type(type)
 {
     g_print("Created dataline %s\n", uuid.c_str());
@@ -28,11 +27,10 @@ DataLine::LineType DataLine::getType() const {
     return type;
 }
 
-GstPad* DataLine::generateNewPad() {
-    auto newPad = gst_element_get_request_pad(tee, "src_%u");
-    return newPad;
+GstStateChangeReturn DataLine::setState(GstState state) {
+    return gst_element_set_state(queue, state);
 }
 
-GstElement* DataLine::getTee() const {
-    return this->tee;
+GstPad* DataLine::generateSinkPad() {
+    return gst_element_get_static_pad(queue, "sink");
 }

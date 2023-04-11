@@ -23,7 +23,11 @@ public:
     void loadBin(GstBin *bin);
     void unloadBin();
 
+    GstPad* generateSrcPad(); 
+    GstPad* generateSinkPad();
+
     GstElement *getFirstElement() const;
+    GstElement *getLastElement() const;
     GstElement *getEncoder() const;
     GstElement *getVolume() const;
 

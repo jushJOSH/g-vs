@@ -35,7 +35,7 @@ bool StreamBranch::loadBin(GstBin *bin) {
     if (!this->bin)
         this->bin = bin;
 
-    gst_bin_add_many(bin, muxer, sink, NULL);
+    gst_bin_add_many(this->bin, muxer, sink, NULL);
     
     return gst_element_link(muxer, sink);
 }

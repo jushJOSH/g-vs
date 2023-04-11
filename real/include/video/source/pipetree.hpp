@@ -23,7 +23,6 @@ private:
 
         SourceConfigDto config;
         
-        std::vector<std::shared_ptr<DataLine>> datalines;
         std::queue<std::shared_ptr<PipeBranch>> branchQueue;
         std::unordered_map<std::string, std::shared_ptr<PipeBranch>> branches;
         std::vector<std::pair<std::string, GstPad*>> createdPads;
@@ -45,14 +44,7 @@ public:
 
     GstElement* getSink(const std::string &name);
     std::vector<std::shared_ptr<DataLine>> &getDatalines();
-
-    void updateBitrate(int bitrate);
-    void updateResolution(const std::string resolution);
-    void updateFrameRate(int fps);
-    void updateAudioQuality(double quality);
-    void updateAudioVolume(double volume);
-    void mute(bool state);
-
+    
 private:
     // static GstPadProbeReturn padProbeCallback(GstPad* pad, GstPadProbeInfo *info, gpointer user_data);
     // static GstPadProbeReturn eventProbeCallback(GstPad* pad, GstPadProbeInfo *info, gpointer user_data);
@@ -69,5 +61,6 @@ private:
     
     // Uri decode bin
     GstElement* source;
+    GstElement* tee;
     GstElement* pipeline;
 };

@@ -4,9 +4,6 @@
 #include <gst/app/app.h>
 #include <string>
 
-// Setting to change
-// - Quality
-// - Volume
 class DataLine
 {
 public:
@@ -29,11 +26,13 @@ public:
     virtual GstPadLinkReturn attachToPipeline(GstPad *before) = 0;
     virtual void detachFromPipeline(GstElement *before) = 0;
     virtual bool detachFromPipeline(GstPad *before) = 0;
+    GstStateChangeReturn setState(GstState state = GST_STATE_PLAYING);
 
-    GstPad* generateNewPad();
+    virtual GstPad* generateSrcPad() = 0;
+    GstPad* generateSinkPad();
 
     virtual GstElement *getFirstElement() const = 0;
-    GstElement *getTee() const;
+    virtual GstElement *getLastElement() const = 0;
     std::string getUUID() const;
     LineType getType() const;
 
@@ -46,6 +45,5 @@ protected:
     std::string encoder_s;
 
     GstBin *bin = nullptr;
-    GstElement *tee;
     GstElement *queue;
 };

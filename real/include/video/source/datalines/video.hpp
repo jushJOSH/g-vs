@@ -26,7 +26,11 @@ public:
     void detachFromPipeline(GstElement *before);
     bool detachFromPipeline(GstPad *before);
     
+    GstPad* generateSrcPad();
+    GstPad* generateSinkPad();
+
     GstElement *getFirstElement() const;
+    GstElement *getLastElement() const;
     GstElement *getEncoder() const;
     GstElement *getScale() const;
     GstElement *getRate() const;

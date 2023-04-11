@@ -33,8 +33,7 @@ AudioLine::AudioLine(
     bool isLinkedOk = 
         gst_element_link(this->queue, this->audioconverter) &&
         gst_element_link(this->audioconverter, this->volume) &&
-        gst_element_link(this->volume, this->audioencoder) &&
-        gst_element_link(this->audioencoder, this->tee);
+        gst_element_link(this->volume, this->audioencoder);
 
     if (!isLinkedOk) 
         throw std::runtime_error("AudioLine: Failed creation of audioline for some reason\n");
@@ -53,7 +52,6 @@ void AudioLine::loadBin(GstBin* bin) {
     this->bin = bin;
     gst_bin_add_many(this->bin, 
                      this->queue,
-                     this->tee, 
                      this->audioconverter, 
                      this->audioconverter, 
                      this->volume, 
@@ -63,7 +61,6 @@ void AudioLine::loadBin(GstBin* bin) {
 void AudioLine::unloadBin() {
     gst_element_send_event(this->queue, gst_event_new_eos());
     gst_bin_remove_many(this->bin,
-                        this->tee,
                         this->queue, 
                         this->audioconverter, 
                         this->volume, 
@@ -102,4 +99,12 @@ bool AudioLine::detachFromPipeline(GstPad* before) {
 
 GstElement* AudioLine::getFirstElement() const {
     return this->queue;
+}
+
+GstElement *AudioLine::getLastElement() const {
+    return this->audioencoder;
+}
+
+GstPad* AudioLine::generateSrcPad() {
+    return gst_element_get_static_pad(audioencoder, "src");
 }

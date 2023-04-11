@@ -8,14 +8,6 @@
 
 class PipeBranch
 {
-private: 
-    struct DataLines {
-        GstBin* bin;
-        GstElement* nextelement;
-        SourceConfigDto dtoConfig;
-        std::vector<std::shared_ptr<DataLine>> datalines;
-    };
-
 public:
     PipeBranch(const std::string& sink, const std::string& muxer = "");
     //virtual ~PipeBranch();
@@ -44,12 +36,16 @@ public:
     virtual bool loadBin(GstBin *bin) = 0;
     virtual void unloadBin() = 0;
     
+    // Attach to pipeline
+    bool attachToPipeline(const std::vector<std::pair<std::string, GstPad*>> &pads);
+
 protected:
     static void onNoMorePads(GstElement* src, GstElement *next);
+    std::shared_ptr<DataLine> createDataline(const std::pair<std::string, GstPad*> &pad);
 
 protected:
     std::string uuid;
-    std::shared_ptr<DataLines> datalines;
+    std::vector<std::shared_ptr<DataLine>> filters;
     SourceConfigDto config;
 
     GstElement* muxer;
