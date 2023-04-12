@@ -5,13 +5,13 @@
 class ScreenshotBranch : public PipeBranch { 
 public:
     ScreenshotBranch(const std::string &path);
-    ScreenshotBranch(GstBin* bin, const std::string &path);
-    //~ScreenshotBranch();
+    ~ScreenshotBranch();
 
     GstPad* getNewPad(DataLine::LineType type);
+    GstElement *getFirstElement() const;
     std::string getPath() const;
 
-    bool loadBin(GstBin *bin);
+    bool loadBin();
     void unloadBin();
 
 private: 

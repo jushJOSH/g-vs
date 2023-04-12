@@ -19,23 +19,8 @@ AudioLine::AudioLine(
     audioencoder(gst_element_factory_make("vorbisenc", str(format("%1%_vorbisenc") % uuid).c_str()))
 {
     g_print("Created audioline %s\n", uuid.c_str());
-}
 
-AudioLine::AudioLine(
-    GstBin* bin,
-    const std::string& encoder, 
-    double quality,
-    double volume)
-:   AudioLine(encoder, quality, volume)
-{
-    loadBin(bin);
-
-    bool isLinkedOk = 
-        gst_element_link(this->queue, this->audioconverter) &&
-        gst_element_link(this->audioconverter, this->volume) &&
-        gst_element_link(this->volume, this->audioencoder);
-
-    if (!isLinkedOk) 
+    if (!loadBin()) 
         throw std::runtime_error("AudioLine: Failed creation of audioline for some reason\n");
 }
 
@@ -46,20 +31,24 @@ GstElement* AudioLine::createEncoder() {
     return gst_element_factory_make(encodername.c_str(), encodername.c_str());
 }
 
-void AudioLine::loadBin(GstBin* bin) {
-    if (this->bin != nullptr) return;
-    
-    this->bin = bin;
+bool AudioLine::loadBin() {
     gst_bin_add_many(this->bin, 
                      this->queue,
                      this->audioconverter, 
                      this->audioconverter, 
                      this->volume, 
                      this->audioencoder, NULL);
+
+    bool isLinkedOk = 
+        gst_element_link(this->queue, this->audioconverter) &&
+        gst_element_link(this->audioconverter, this->volume) &&
+        gst_element_link(this->volume, this->audioencoder);
+
+    return isLinkedOk;
 }
 
 void AudioLine::unloadBin() {
-    gst_element_send_event(this->queue, gst_event_new_eos());
+    gst_element_set_state(GST_ELEMENT(bin), GST_STATE_NULL);
     gst_bin_remove_many(this->bin,
                         this->queue, 
                         this->audioconverter, 
@@ -106,5 +95,15 @@ GstElement *AudioLine::getLastElement() const {
 }
 
 GstPad* AudioLine::generateSrcPad() {
-    return gst_element_get_static_pad(audioencoder, "src");
+    auto staticPad = gst_element_get_static_pad(audioencoder, "src");
+    auto ghostPad = gst_ghost_pad_new("src", staticPad);
+    gst_element_add_pad(GST_ELEMENT(bin), ghostPad);
+    g_object_unref(staticPad);
+
+    return gst_element_get_static_pad(GST_ELEMENT(bin), "src");
+}
+
+AudioLine::~AudioLine() {
+    gst_element_send_event(GST_ELEMENT(this->bin), gst_event_new_eos());
+    unloadBin();
 }

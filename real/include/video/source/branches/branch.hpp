@@ -10,12 +10,12 @@ class PipeBranch
 {
 public:
     PipeBranch(const std::string& sink, const std::string& muxer = "");
-    //virtual ~PipeBranch();
+    virtual ~PipeBranch();
 
     // Getters
     virtual GstPad *getNewPad(DataLine::LineType type) = 0;
-    GstElement *getSink() const;
-    GstElement *getMuxer() const;
+    virtual GstElement *getFirstElement() const = 0;
+    GstElement *getLastElement() const;
     GstBin* getBin() const;
     std::string getUUID() const;
 
@@ -33,14 +33,13 @@ public:
     void setSink(GstElement* sink);
 
     // Bin ops
-    virtual bool loadBin(GstBin *bin) = 0;
+    virtual bool loadBin() = 0;
     virtual void unloadBin() = 0;
     
     // Attach to pipeline
     bool attachToPipeline(const std::vector<std::pair<std::string, GstPad*>> &pads);
 
 protected:
-    static void onNoMorePads(GstElement* src, GstElement *next);
     std::shared_ptr<DataLine> createDataline(const std::pair<std::string, GstPad*> &pad);
 
 protected:

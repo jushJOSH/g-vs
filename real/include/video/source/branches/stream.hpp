@@ -12,14 +12,14 @@ public:
     };
 
     StreamBranch();
-    StreamBranch(GstBin* bin);
-    //~StreamBranch();
+    ~StreamBranch();
 
     GstPad* getNewPad(DataLine::LineType type);
+    GstElement *getFirstElement() const;
     std::shared_ptr<Sample> getSample();
     void waitSample() const;
 
-    bool loadBin(GstBin *bin);
+    bool loadBin();
     void unloadBin();
 
     void setCallback(GCallback callback);

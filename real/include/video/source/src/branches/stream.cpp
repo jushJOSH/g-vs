@@ -22,31 +22,35 @@ StreamBranch::StreamBranch()
 {
     g_print("Created stream branch %s\n", uuid.c_str());
     arg->samples = std::make_shared<boost::circular_buffer<std::shared_ptr<Sample>>>(10);
-}
 
-StreamBranch::StreamBranch(GstBin* bin)
-:   StreamBranch()
-{
-    if (!loadBin(bin))
+    if (!loadBin())
         throw std::runtime_error("Could not link elements for some reason...");
 }
 
-bool StreamBranch::loadBin(GstBin *bin) {
-    if (!this->bin)
-        this->bin = bin;
-
-    gst_bin_add_many(this->bin, muxer, sink, NULL);
-    
+bool StreamBranch::loadBin() {
+    gst_bin_add_many(bin, muxer, sink, NULL);
     return gst_element_link(muxer, sink);
 }
 
 void StreamBranch::unloadBin() {
+    gst_element_set_state(GST_ELEMENT(bin), GST_STATE_NULL);
     gst_bin_remove_many(bin, muxer, sink, NULL);
-    bin = nullptr;
 }
 
 GstPad* StreamBranch::getNewPad(DataLine::LineType type) {
-    return gst_element_get_request_pad(muxer, "sink_%u");
+    auto newPad = gst_element_get_request_pad(muxer, "sink_%u");
+
+    auto padName = gst_pad_get_name(newPad);
+    auto ghostName = str(format("%1%_%2%_ghost") % uuid % padName).c_str();
+
+    auto ghostPad = gst_ghost_pad_new(
+            ghostName,
+            newPad
+    );
+    gst_element_add_pad(GST_ELEMENT(bin), ghostPad);
+    g_object_unref(newPad);
+
+    return gst_element_get_static_pad(GST_ELEMENT(bin), ghostName);
 }
 
 void StreamBranch::setCallback(GCallback callback) {
@@ -76,4 +80,15 @@ GstFlowReturn StreamBranch::onNewSample(GstElement* appsink, CallbackArg *data) 
     data->samples->push_back(std::make_shared<Sample>(sample));
 
     return GST_FLOW_OK;
+}
+
+GstElement *StreamBranch::getFirstElement() const {
+    return this->muxer;
+}
+
+StreamBranch::~StreamBranch() {
+    g_print("StreamBranch: destroyed one\n");
+
+    gst_element_send_event(GST_ELEMENT(bin), gst_event_new_eos());
+    unloadBin();
 }

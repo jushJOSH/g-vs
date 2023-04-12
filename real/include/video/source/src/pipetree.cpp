@@ -138,7 +138,7 @@ PipeTree::~PipeTree() {
 // All branches must be in queue
 // Queue will be solved as soon as noMorePads signal appears
 void PipeTree::addBranch(std::shared_ptr<PipeBranch> branch) {
-    branch->loadBin(GST_BIN(this->pipeline));
+    gst_bin_add(GST_BIN(this->pipeline), GST_ELEMENT(branch->getBin()));
     padinfo.branchQueue.push(branch);
 
     // If add branch after pad init
@@ -154,7 +154,7 @@ void PipeTree::removeBranch(const std::string& name) {
 
 GstElement* PipeTree::getSink(const std::string &name) {
     return padinfo.branches.contains(name) 
-        ? padinfo.branches[name]->getSink() 
+        ? padinfo.branches[name]->getLastElement() 
         : nullptr;
 }
 

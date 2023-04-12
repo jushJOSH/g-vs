@@ -15,10 +15,9 @@ class VideoLine : public DataLine
 {
 public:
     VideoLine(const std::string &encoder, Resolution resolution, int fps, int bitrate);
-    VideoLine(GstBin *bin, const std::string &encoder, Resolution resolution, int fps, int bitrate);
-    //~VideoLine();
+    ~VideoLine();
 
-    void loadBin(GstBin *bin);
+    bool loadBin();
     void unloadBin();
 
     bool attachToPipeline(GstElement *before);

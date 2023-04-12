@@ -1,29 +1,3 @@
-// // #include <video/source/source.hpp>
-
-// // int main(int argc, char *argv[]) {
-// //     gst_init(&argc, &argv);
-// //     auto loop = g_main_loop_new(NULL, false);   
-
-// //     SourceConfigDto config;
-// //     config.archive_path = "/home/egor/";
-
-// //     Source testSource("rtsp://193.19.103.188:1935/live/Pl_Lunincev.stream");
-// //     auto screenshot = std::make_shared<ScreenshotBranch>("/home/egor/test.png");
-// //     auto archive = std::make_shared<ArchiveBranch>("/home/egor/test.mp4");
-// //     auto stream = std::make_shared<StreamBranch>();
-
-// //     auto changeStateResult = testSource.setState();
-// //     testSource.addBranch("screenshot", screenshot);
-// //     testSource.addBranch("archive", archive);
-// //     testSource.addBranch("stream", stream);
-
-// //     if (changeStateResult == GST_STATE_CHANGE_FAILURE) {
-// //         g_printerr ("Unable to set the pipeline to the playing state.\n");
-// //         return -1;
-// //     }
-// // }
-
-
 #include <api/controller/auth.hpp>
 #include <api/controller/users.hpp>
 #include <api/controller/vsapi.hpp>

@@ -43,6 +43,8 @@ public:
 protected:
     std::string source;
 
+    GstPipeline* pipeline;
+
     std::string uuid;
     std::shared_ptr<PipeTree> sourceElements;
 };

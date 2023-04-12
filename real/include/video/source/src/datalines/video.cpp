@@ -23,44 +23,30 @@ VideoLine::VideoLine(
     videoencoder(createEncoder())
 {
     g_print("Created videoline %s\n", uuid.c_str());
-}
 
-VideoLine::VideoLine(
-    GstBin* bin,
-    const std::string &encoder,
-    Resolution resolution, 
-    int fps, 
-    int bitrate)
-:   VideoLine(encoder, resolution, fps, bitrate)
-{
-    loadBin(bin);
-
-    g_print("%s - linking elements together!\n", uuid.c_str());
-    bool isLinkedOk = 
-        gst_element_link(this->queue, this->videoconverter) &&
-        gst_element_link(this->videoconverter, this->videoscale) &&
-        gst_element_link(this->videoscale, this->videorate) &&
-        gst_element_link(this->videorate, this->videoencoder);
-
-    if (!isLinkedOk) 
+    if (!loadBin()) 
         throw std::runtime_error("VideoLine: Failed creation of videoline for some reason\n");
 }
 
-void VideoLine::loadBin(GstBin* bin) {
-    g_print("%s - loading BIN\n", uuid.c_str());
-    if (this->bin != nullptr) return;
-    
-    this->bin = bin;
+bool VideoLine::loadBin() {
     gst_bin_add_many(this->bin, 
                      this->queue,
                      this->videoconverter, 
                      this->videoscale, 
                      this->videorate, 
                      this->videoencoder, NULL);
+
+    bool isLinkedOk = 
+        gst_element_link(this->queue, this->videoconverter) &&
+        gst_element_link(this->videoconverter, this->videoscale) &&
+        gst_element_link(this->videoscale, this->videorate) &&
+        gst_element_link(this->videorate, this->videoencoder);
+
+    return isLinkedOk;
 }
 
 void VideoLine::unloadBin() {
-    gst_element_send_event(this->queue, gst_event_new_eos());
+    gst_element_send_event(GST_ELEMENT(this->bin), gst_event_new_eos());
     gst_bin_remove_many(this->bin, 
                         this->queue,
                         this->videoconverter, 
@@ -140,5 +126,15 @@ GstElement *VideoLine::getLastElement() const {
 }
 
 GstPad* VideoLine::generateSrcPad() {
-    return gst_element_get_static_pad(videoencoder, "src");
+    auto staticPad = gst_element_get_static_pad(videoencoder, "src");
+    auto ghostPad = gst_ghost_pad_new("src", staticPad);
+    gst_element_add_pad(GST_ELEMENT(bin), ghostPad);
+    g_object_unref(staticPad);
+
+    return gst_element_get_static_pad(GST_ELEMENT(bin), "src");
+}
+
+VideoLine::~VideoLine() {
+    gst_element_send_event(GST_ELEMENT(this->bin), gst_event_new_eos());
+    unloadBin();
 }

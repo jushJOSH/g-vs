@@ -19,43 +19,60 @@ ArchiveBranch::ArchiveBranch(const std::string &path)
 {
     g_print("Created archive branch %s\n", uuid.c_str());
     g_object_set(sink, "location", path.c_str(), NULL);
-}
 
-ArchiveBranch::ArchiveBranch(GstBin* bin, const std::string &path)
-:   ArchiveBranch(path)
-{
-    if (!loadBin(bin))
+    if (!loadBin())
         throw std::runtime_error("Could not link elements for some reason...");
+
 }
 
-bool ArchiveBranch::loadBin(GstBin *bin) {
-    if (!this->bin)
-        this->bin = bin;
-
+bool ArchiveBranch::loadBin() {
     gst_bin_add_many(this->bin, muxer, sink, NULL);
     return gst_element_link(muxer, sink);
 }
 
 void ArchiveBranch::unloadBin() {
+    gst_element_set_state(GST_ELEMENT(bin), GST_STATE_NULL);
     gst_bin_remove_many(bin, muxer, sink, NULL);
-    bin = nullptr;
 }
 
 GstPad* ArchiveBranch::getNewPad(DataLine::LineType type) {
+    GstPad* newPad = nullptr;
     switch(type) {
         case DataLine::LineType::Audio:
         g_print("StreamBranch: Getting new audio pad\n");
-        return gst_element_get_request_pad(muxer, "audio_%u");
+        newPad = gst_element_get_request_pad(muxer, "audio_%u");
 
         case DataLine::LineType::Video:
         g_print("StreamBranch: Getting new video pad\n");
-        return gst_element_get_request_pad(muxer, "video_%u");
+        newPad = gst_element_get_request_pad(muxer, "video_%u");
 
         default:
         return nullptr;
     }
+
+    auto padName = gst_pad_get_name(newPad);
+    auto ghostPadName = str(format("%1%_%2%_ghost") % uuid % padName).c_str();
+    auto ghostPad = gst_ghost_pad_new(
+            ghostPadName,
+            newPad
+    );
+    gst_element_add_pad(GST_ELEMENT(bin), ghostPad);
+    g_object_unref(newPad);
+
+    return gst_element_get_static_pad(GST_ELEMENT(bin), ghostPadName);
 }
 
 std::string ArchiveBranch::getPath() const {
     return this->path;
+}
+
+GstElement *ArchiveBranch::getFirstElement() const {
+    return this->muxer;
+}
+
+ArchiveBranch::~ArchiveBranch() {
+    g_print("ArchiveBranch: destroyed one\n");
+
+    gst_element_send_event(GST_ELEMENT(bin), gst_event_new_eos());
+    unloadBin();
 }
