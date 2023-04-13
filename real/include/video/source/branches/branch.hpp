@@ -13,7 +13,7 @@ public:
     virtual ~PipeBranch();
 
     // Getters
-    virtual GstPad *getNewPad(DataLine::LineType type) = 0;
+    virtual GstPad *getSinkPad(DataLine::LineType type) = 0;
     virtual GstElement *getFirstElement() const = 0;
     GstElement *getLastElement() const;
     GstBin* getBin() const;
@@ -37,7 +37,7 @@ public:
     virtual void unloadBin() = 0;
     
     // Attach to pipeline
-    bool attachToPipeline(const std::vector<std::pair<std::string, GstPad*>> &pads);
+    bool attachToPipeline(const std::vector<std::pair<std::string, GstPad*>> &pads, GstBin* parentBin);
 
 protected:
     std::shared_ptr<DataLine> createDataline(const std::pair<std::string, GstPad*> &pad);

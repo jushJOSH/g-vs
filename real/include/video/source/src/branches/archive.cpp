@@ -35,7 +35,7 @@ void ArchiveBranch::unloadBin() {
     gst_bin_remove_many(bin, muxer, sink, NULL);
 }
 
-GstPad* ArchiveBranch::getNewPad(DataLine::LineType type) {
+GstPad* ArchiveBranch::getSinkPad(DataLine::LineType type) {
     GstPad* newPad = nullptr;
     switch(type) {
         case DataLine::LineType::Audio:

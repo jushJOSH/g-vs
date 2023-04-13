@@ -68,7 +68,7 @@ int PipeTree::manageBranchQueue(PadInfo& data) {
         auto branch = data.branchQueue.front();
         data.branchQueue.pop();
 
-        if (!branch->attachToPipeline(data.createdPads))
+        if (!branch->attachToPipeline(data.createdPads, data.bin))
             continue;
 
         successfulCount++;
@@ -83,7 +83,7 @@ void PipeTree::onNoMorePads(GstElement* src, PadInfo* data) {
     data->noMorePads = true;
     manageBranchQueue(*data);
 
-    gst_element_set_state(GST_ELEMENT(data->bin), GST_STATE_PLAYING);
+    gst_element_set_state(GST_ELEMENT(data->bin), data->currentState);
 }
 
 void PipeTree::onNewPad(GstElement* element, GstPad* newPad, PadInfo* userData) {
@@ -138,7 +138,6 @@ PipeTree::~PipeTree() {
 // All branches must be in queue
 // Queue will be solved as soon as noMorePads signal appears
 void PipeTree::addBranch(std::shared_ptr<PipeBranch> branch) {
-    gst_bin_add(GST_BIN(this->pipeline), GST_ELEMENT(branch->getBin()));
     padinfo.branchQueue.push(branch);
 
     // If add branch after pad init

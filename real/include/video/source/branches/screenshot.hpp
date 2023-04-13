@@ -7,7 +7,7 @@ public:
     ScreenshotBranch(const std::string &path);
     ~ScreenshotBranch();
 
-    GstPad* getNewPad(DataLine::LineType type);
+    GstPad* getSinkPad(DataLine::LineType type);
     GstElement *getFirstElement() const;
     std::string getPath() const;
 

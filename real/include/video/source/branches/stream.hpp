@@ -14,7 +14,7 @@ public:
     StreamBranch();
     ~StreamBranch();
 
-    GstPad* getNewPad(DataLine::LineType type);
+    GstPad* getSinkPad(DataLine::LineType type);
     GstElement *getFirstElement() const;
     std::shared_ptr<Sample> getSample();
     void waitSample() const;

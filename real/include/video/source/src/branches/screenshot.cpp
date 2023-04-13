@@ -34,7 +34,7 @@ void ScreenshotBranch::unloadBin() {
     gst_bin_remove_many(bin, sink, NULL);
 }
 
-GstPad* ScreenshotBranch::getNewPad(DataLine::LineType type) {
+GstPad* ScreenshotBranch::getSinkPad(DataLine::LineType type) {
     GstPad* newPad = nullptr;
 
     switch(type) {

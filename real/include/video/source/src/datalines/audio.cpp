@@ -20,20 +20,7 @@ AudioLine::AudioLine(
 {
     g_print("Created audioline %s\n", uuid.c_str());
 
-    if (!loadBin()) 
-        throw std::runtime_error("AudioLine: Failed creation of audioline for some reason\n");
-}
-
-GstElement* AudioLine::createEncoder() {
-    auto encodertype = str(format("%1%enc") % encoder_s);
-    auto encodername = str(format("%1%_%2%") % uuid % encodertype);
-
-    return gst_element_factory_make(encodername.c_str(), encodername.c_str());
-}
-
-bool AudioLine::loadBin() {
     gst_bin_add_many(this->bin, 
-                     this->queue,
                      this->audioconverter, 
                      this->audioconverter, 
                      this->volume, 
@@ -44,10 +31,28 @@ bool AudioLine::loadBin() {
         gst_element_link(this->audioconverter, this->volume) &&
         gst_element_link(this->volume, this->audioencoder);
 
-    return isLinkedOk;
+    if (!isLinkedOk)
+        throw std::runtime_error("Failed to create audioline");
+
+    generateSrcPad();
 }
 
-void AudioLine::unloadBin() {
+GstElement* AudioLine::createEncoder() {
+    auto encodertype = str(format("%1%enc") % encoder_s);
+    auto encodername = str(format("%1%_%2%") % uuid % encodertype);
+
+    return gst_element_factory_make(encodername.c_str(), encodername.c_str());
+}
+
+void AudioLine::generateSrcPad() const {
+    auto staticPad = gst_element_get_static_pad(audioencoder, "src");
+    auto ghostPad = gst_ghost_pad_new("src", staticPad);
+    gst_element_add_pad(GST_ELEMENT(bin), ghostPad);
+    g_object_unref(staticPad);
+}
+
+AudioLine::~AudioLine() {
+    gst_element_send_event(GST_ELEMENT(this->bin), gst_event_new_eos());
     gst_element_set_state(GST_ELEMENT(bin), GST_STATE_NULL);
     gst_bin_remove_many(this->bin,
                         this->queue, 
@@ -56,54 +61,20 @@ void AudioLine::unloadBin() {
                         this->audioencoder, NULL);
 }
 
-GstElement* AudioLine::getEncoder() const {
-    return this->audioencoder;
+void AudioLine::updateVolume(double volume) {
+    if (volume > 1.0) volume = 1.0;
+    else if (volume < 0.0) volume = 0.0;
+
+    g_object_set(this->volume, "volume", volume, NULL);
 }
 
-GstElement* AudioLine::getVolume() const {
-    return volume;
+void AudioLine::updateQuality(double quality) {
+    if (quality > 1.0) quality = 1.0;
+    else if (quality < 0.0) quality = 0.0;
+
+    g_object_set(audioencoder, "quality", quality, NULL);
 }
 
-bool AudioLine::attachToPipeline(GstElement* before) {
-    return 
-        gst_element_link(before, this->queue);
-}
-
-GstPadLinkReturn AudioLine::attachToPipeline(GstPad* before) {
-    g_print("AudioLine: Attaching to pipeline\n");
-
-    auto queueSink = gst_element_get_static_pad(this->queue, "sink");
-    return gst_pad_link(before, queueSink);
-}
-
-void AudioLine::detachFromPipeline(GstElement* before) {
-    gst_element_unlink(before, this->queue);
-}
-
-bool AudioLine::detachFromPipeline(GstPad* before) {
-    auto queueSink = gst_element_get_static_pad(this->queue, "sink");
-    return 
-        gst_pad_unlink(before, queueSink);
-}
-
-GstElement* AudioLine::getFirstElement() const {
-    return this->queue;
-}
-
-GstElement *AudioLine::getLastElement() const {
-    return this->audioencoder;
-}
-
-GstPad* AudioLine::generateSrcPad() {
-    auto staticPad = gst_element_get_static_pad(audioencoder, "src");
-    auto ghostPad = gst_ghost_pad_new("src", staticPad);
-    gst_element_add_pad(GST_ELEMENT(bin), ghostPad);
-    g_object_unref(staticPad);
-
-    return gst_element_get_static_pad(GST_ELEMENT(bin), "src");
-}
-
-AudioLine::~AudioLine() {
-    gst_element_send_event(GST_ELEMENT(this->bin), gst_event_new_eos());
-    unloadBin();
+void AudioLine::mute(bool mute) {
+    g_object_set(volume, "mute", mute, NULL);
 }

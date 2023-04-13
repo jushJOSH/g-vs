@@ -14,24 +14,13 @@ class AudioLine : public DataLine
 public:
     AudioLine(const std::string& encoder, double quality, double volume);
     ~AudioLine();
-
-    bool attachToPipeline(GstElement *before);
-    GstPadLinkReturn attachToPipeline(GstPad *before);
-    void detachFromPipeline(GstElement *before);
-    bool detachFromPipeline(GstPad *before);
-
-    bool loadBin();
-    void unloadBin();
-
-    GstPad* generateSrcPad(); 
-    GstPad* generateSinkPad();
-
-    GstElement *getFirstElement() const;
-    GstElement *getLastElement() const;
-    GstElement *getEncoder() const;
-    GstElement *getVolume() const;
+    
+    void updateVolume(double volume);
+    void updateQuality(double quality);
+    void mute(bool mute);
 
 private:
+    void generateSrcPad() const; 
     GstElement* createEncoder();
 
 private:

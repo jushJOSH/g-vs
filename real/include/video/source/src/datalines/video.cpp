@@ -24,13 +24,7 @@ VideoLine::VideoLine(
 {
     g_print("Created videoline %s\n", uuid.c_str());
 
-    if (!loadBin()) 
-        throw std::runtime_error("VideoLine: Failed creation of videoline for some reason\n");
-}
-
-bool VideoLine::loadBin() {
     gst_bin_add_many(this->bin, 
-                     this->queue,
                      this->videoconverter, 
                      this->videoscale, 
                      this->videorate, 
@@ -42,21 +36,10 @@ bool VideoLine::loadBin() {
         gst_element_link(this->videoscale, this->videorate) &&
         gst_element_link(this->videorate, this->videoencoder);
 
-    return isLinkedOk;
-}
+    if (!isLinkedOk)
+        throw std::runtime_error("Failed to create videoline");
 
-void VideoLine::unloadBin() {
-    gst_element_send_event(GST_ELEMENT(this->bin), gst_event_new_eos());
-    gst_bin_remove_many(this->bin, 
-                        this->queue,
-                        this->videoconverter, 
-                        this->videoscale,
-                        this->videorate,
-                        this->videoencoder, NULL);
-}
-
-GstElement* VideoLine::getEncoder() const {
-    return this->videoencoder;
+    generateSrcPad();
 }
 
 GstElement* VideoLine::createEncoder() {
@@ -89,52 +72,35 @@ VideoLine::Resolution VideoLine::strToResolution(const std::string &resolution_s
     return resolution;
 }
 
-GstElement* VideoLine::getRate() const {
-    return this->videorate;
-}
-
-GstElement* VideoLine::getScale() const {
-    return this->videoscale;
-}
-
-bool VideoLine::attachToPipeline(GstElement* before) {
-    return gst_element_link(before, this->queue);
-}
-
-GstPadLinkReturn VideoLine::attachToPipeline(GstPad* before) {
-    g_print("VideoLine: Attaching to pipeline\n");
-
-    auto queueSink = gst_element_get_static_pad(this->queue, "sink");
-    return gst_pad_link(before, queueSink);
-}
-
-void VideoLine::detachFromPipeline(GstElement* before) {
-    gst_element_unlink(before, this->queue);
-}
-
-bool VideoLine::detachFromPipeline(GstPad* before) {
-    auto queueSink = gst_element_get_static_pad(this->queue, "sink");
-    return gst_pad_unlink(before, queueSink);
-}
-
-GstElement* VideoLine::getFirstElement() const {
-    return this->queue;
-}
-
-GstElement *VideoLine::getLastElement() const {
-    return this->videoencoder;
-}
-
-GstPad* VideoLine::generateSrcPad() {
+void VideoLine::generateSrcPad() const {
     auto staticPad = gst_element_get_static_pad(videoencoder, "src");
     auto ghostPad = gst_ghost_pad_new("src", staticPad);
+
     gst_element_add_pad(GST_ELEMENT(bin), ghostPad);
     g_object_unref(staticPad);
-
-    return gst_element_get_static_pad(GST_ELEMENT(bin), "src");
 }
 
 VideoLine::~VideoLine() {
     gst_element_send_event(GST_ELEMENT(this->bin), gst_event_new_eos());
-    unloadBin();
+    gst_element_set_state(GST_ELEMENT(bin), GST_STATE_NULL);
+    gst_bin_remove_many(this->bin, 
+                        this->queue,
+                        this->videoconverter, 
+                        this->videoscale,
+                        this->videorate,
+                        this->videoencoder, NULL);
+}
+
+void VideoLine::updateBitrate(int bitrate) {
+    g_object_set(videoencoder, "bitrate", bitrate, NULL);
+}
+
+void VideoLine::updateResolution(const std::string &resolution) {
+    auto targetResolution = VideoLine::strToResolution(resolution);
+    g_object_set(videoscale, "width", targetResolution.width, NULL);
+    g_object_set(videoscale, "height", targetResolution.height, NULL);
+}
+
+void VideoLine::updateFramerate(int fps) {
+    g_object_set(videorate, "max-rate", fps, NULL);
 }

@@ -17,26 +17,14 @@ public:
     VideoLine(const std::string &encoder, Resolution resolution, int fps, int bitrate);
     ~VideoLine();
 
-    bool loadBin();
-    void unloadBin();
-
-    bool attachToPipeline(GstElement *before);
-    GstPadLinkReturn attachToPipeline(GstPad *before);
-    void detachFromPipeline(GstElement *before);
-    bool detachFromPipeline(GstPad *before);
-    
-    GstPad* generateSrcPad();
-    GstPad* generateSinkPad();
-
-    GstElement *getFirstElement() const;
-    GstElement *getLastElement() const;
-    GstElement *getEncoder() const;
-    GstElement *getScale() const;
-    GstElement *getRate() const;
+    void updateBitrate(int bitrate);
+    void updateResolution(const std::string &resolution);
+    void updateFramerate(int fps);
     
     static Resolution strToResolution(const std::string &resolution_s, char separator = 'x');
 
 private:
+    void generateSrcPad() const;
     GstElement* createEncoder();
 
 private:

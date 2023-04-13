@@ -37,20 +37,20 @@ void StreamBranch::unloadBin() {
     gst_bin_remove_many(bin, muxer, sink, NULL);
 }
 
-GstPad* StreamBranch::getNewPad(DataLine::LineType type) {
+GstPad* StreamBranch::getSinkPad(DataLine::LineType type) {
     auto newPad = gst_element_get_request_pad(muxer, "sink_%u");
 
-    auto padName = gst_pad_get_name(newPad);
-    auto ghostName = str(format("%1%_%2%_ghost") % uuid % padName).c_str();
+    auto padName = std::string(gst_pad_get_name(newPad));
+    auto ghostName = str(format("%1%_%2%_ghost") % uuid % padName);
 
     auto ghostPad = gst_ghost_pad_new(
-            ghostName,
+            ghostName.c_str(),
             newPad
     );
     gst_element_add_pad(GST_ELEMENT(bin), ghostPad);
     g_object_unref(newPad);
 
-    return gst_element_get_static_pad(GST_ELEMENT(bin), ghostName);
+    return ghostPad;
 }
 
 void StreamBranch::setCallback(GCallback callback) {

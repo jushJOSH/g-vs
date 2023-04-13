@@ -7,7 +7,7 @@ public:
     ArchiveBranch(const std::string &path);
     ~ArchiveBranch();
 
-    GstPad* getNewPad(DataLine::LineType type);
+    GstPad* getSinkPad(DataLine::LineType type);
     GstElement *getFirstElement() const;
     std::string getPath() const;
 
