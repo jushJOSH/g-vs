@@ -25,7 +25,7 @@ private:
         
         std::queue<std::shared_ptr<PipeBranch>> branchQueue;
         std::unordered_map<std::string, std::shared_ptr<PipeBranch>> branches;
-        std::vector<std::pair<std::string, GstPad*>> createdPads;
+        std::vector<std::pair<std::string, GstElement*>> createdPads;
         bool noMorePads = false;
     };
 

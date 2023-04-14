@@ -39,7 +39,7 @@ std::string PipeBranch::getUUID() const {
     return uuid;
 }
 
-std::shared_ptr<DataLine> PipeBranch::createDataline(const std::pair<std::string, GstPad*> &pad) {
+std::shared_ptr<DataLine> PipeBranch::createDataline(const std::pair<std::string, GstElement*> &pad) {
     g_print("PipeBranch: creating new dataline\n");
     
     std::shared_ptr<DataLine> newLine;
@@ -65,9 +65,9 @@ std::shared_ptr<DataLine> PipeBranch::createDataline(const std::pair<std::string
     return newLine;
 }
 
-bool PipeBranch::attachToPipeline(const std::vector<std::pair<std::string, GstPad*>> &pads, GstBin* parentBin) {
+bool PipeBranch::attachToPipeline(const std::vector<std::pair<std::string, GstElement*>> &pads, GstBin* parentBin) {
     // First of all add branch to pipeline
-     gst_bin_add(parentBin, GST_ELEMENT(this->bin));
+    gst_bin_add(parentBin, GST_ELEMENT(this->bin));
     
     for (auto &pad : pads) {
         g_print("PipeBranch: creating %s dataline\n", pad.first.c_str());
@@ -76,13 +76,15 @@ bool PipeBranch::attachToPipeline(const std::vector<std::pair<std::string, GstPa
         gst_bin_add(parentBin, *dataline);
 
         auto filterSinkPad = gst_element_get_static_pad(*dataline, "sink");
-        auto branchLinkResult = gst_pad_link(pad.second, filterSinkPad);
+        auto srcPad = gst_element_get_request_pad(pad.second, "src_%u");
+        auto branchLinkResult = gst_pad_link(srcPad, filterSinkPad);
         if (branchLinkResult != GstPadLinkReturn::GST_PAD_LINK_OK)
         {
             g_print("PipeBranch: failed to link dataline and uribindecode\n");
             gst_bin_remove(parentBin, *dataline);
             continue;
         }
+        else this->pads.push_back({pad.first, srcPad});
 
         auto filterSrcPad = gst_element_get_static_pad(*dataline, "src");
         auto branchPad = getSinkPad(dataline->getType());
@@ -104,4 +106,12 @@ bool PipeBranch::attachToPipeline(const std::vector<std::pair<std::string, GstPa
 
 PipeBranch::~PipeBranch() {
     g_print("PipeBranch: destroyed one\n");
+
+    try {
+        auto parent = gst_pad_get_parent_element(pads[0].second);
+        for (auto &pad : pads)
+            gst_element_release_request_pad(parent, pad.second);
+    } catch (const std::exception &e) {
+        g_print("PipeBranch: pad remove error: %s\n", e.what());
+    }
 }

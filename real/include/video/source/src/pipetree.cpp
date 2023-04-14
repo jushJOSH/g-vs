@@ -89,16 +89,30 @@ void PipeTree::onNoMorePads(GstElement* src, PadInfo* data) {
 void PipeTree::onNewPad(GstElement* element, GstPad* newPad, PadInfo* userData) {
     g_print ("PipeBranch: Received new pad '%s'\n", GST_PAD_NAME (newPad));
 
+    auto teeUUID = boost::uuids::to_string(boost::uuids::random_generator_mt19937()());
+    GstElement* padTee = gst_element_factory_make(
+        "tee",
+        str(format("%1%_tee") % teeUUID).c_str()
+    );
+    gst_bin_add(userData->bin, padTee);
+
+    auto newTeePad = gst_element_get_static_pad(padTee, "sink");
+    auto linkResult = gst_pad_link(newPad, newTeePad);
+    if (linkResult != GST_PAD_LINK_OK) {
+        g_print("PipeBranch: Failed to init '%s' pad\n", GST_PAD_NAME(newPad));
+        return;
+    }
+
     // Check new pad type
     GstCaps *pad_caps = gst_pad_get_current_caps (newPad);
     GstStructure *pad_struct = gst_caps_get_structure (pad_caps, 0);
     const gchar *pad_type = gst_structure_get_name (pad_struct);
 
     if (g_str_has_prefix (pad_type, "audio/x-raw"))
-        userData->createdPads.push_back({"audio/x-raw", newPad});
+        userData->createdPads.push_back({"audio/x-raw", padTee});
 
     else if (g_str_has_prefix(pad_type, "video/x-raw")) 
-        userData->createdPads.push_back({"video/x-raw", newPad});
+        userData->createdPads.push_back({"video/x-raw", padTee});
 
     else return;
     

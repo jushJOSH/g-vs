@@ -37,14 +37,15 @@ public:
     virtual void unloadBin() = 0;
     
     // Attach to pipeline
-    bool attachToPipeline(const std::vector<std::pair<std::string, GstPad*>> &pads, GstBin* parentBin);
+    bool attachToPipeline(const std::vector<std::pair<std::string, GstElement*>> &pads, GstBin* parentBin);
 
 protected:
-    std::shared_ptr<DataLine> createDataline(const std::pair<std::string, GstPad*> &pad);
+    std::shared_ptr<DataLine> createDataline(const std::pair<std::string, GstElement*> &pad);
 
 protected:
     std::string uuid;
     std::vector<std::shared_ptr<DataLine>> filters;
+    std::vector<std::pair<std::string, GstPad*>> pads;
     SourceConfigDto config;
 
     GstElement* muxer;
