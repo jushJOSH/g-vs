@@ -25,8 +25,15 @@ private:
         
         std::queue<std::shared_ptr<PipeBranch>> branchQueue;
         std::unordered_map<std::string, std::shared_ptr<PipeBranch>> branches;
-        std::vector<std::pair<std::string, GstPad*>> createdPads;
+        std::vector<std::pair<std::string, GstElement*>> createdPads;
         bool noMorePads = false;
+    };
+
+    struct RemoveBranch {
+        int currIdx;
+        std::shared_ptr<PipeBranch> branch;
+        std::unordered_map<std::string, std::shared_ptr<PipeBranch>> branches;     
+        GstBin* bin;
     };
 
 public:
@@ -44,10 +51,10 @@ public:
 
     GstElement* getSink(const std::string &name);
     std::vector<std::shared_ptr<DataLine>> &getDatalines();
-    
+
 private:
-    // static GstPadProbeReturn padProbeCallback(GstPad* pad, GstPadProbeInfo *info, gpointer user_data);
-    // static GstPadProbeReturn eventProbeCallback(GstPad* pad, GstPadProbeInfo *info, gpointer user_data);
+    static GstPadProbeReturn padProbeCallback(GstPad* pad, GstPadProbeInfo *info, gpointer user_data);
+    static GstPadProbeReturn eventProbeCallback(GstPad* pad, GstPadProbeInfo *info, gpointer user_data);
     static void onNewPad(GstElement *src, GstPad *newPad, PadInfo* data);
     static void onErrorCallback(GstBus *bus, GstMessage *msg, gpointer data);
     static int manageBranchQueue(PadInfo& data);

@@ -30,29 +30,29 @@ GstBin* PipeBranch::getBin() const {
     return bin;
 }
 
-GstStateChangeReturn PipeBranch::setState(GstState state) {
-    for (auto &filter : filters) gst_element_set_state(*filter, state);
-    return gst_element_set_state(GST_ELEMENT(bin), state);
+bool PipeBranch::syncState() {
+    bool result = true;
+    for (auto &filter : filters) result = result && gst_element_sync_state_with_parent(*filter);
+    return result && gst_element_sync_state_with_parent(GST_ELEMENT(bin));
 }
 
 std::string PipeBranch::getUUID() const {
     return uuid;
 }
 
-std::shared_ptr<DataLine> PipeBranch::createDataline(const std::pair<std::string, GstPad*> &pad) {
+std::shared_ptr<DataLine> PipeBranch::createDataline(const std::string &padType) {
     g_print("PipeBranch: creating new dataline\n");
     
     std::shared_ptr<DataLine> newLine;
-    auto &[type, g_pad] = pad;
 
-    if (type == "audio/x-raw") {
+    if (padType == "audio/x-raw") {
         newLine = std::make_shared<AudioLine>(
             config.audioencoding,
             config.quality,
             config.volume);
         std::reinterpret_pointer_cast<AudioLine>(newLine)->mute(config.mute);
     }
-    else if (type == "video/x-raw") {
+    else if (padType == "video/x-raw") {
         newLine = std::make_shared<VideoLine>(
             config.videoencoding,
             VideoLine::strToResolution(config.resolution),
@@ -65,25 +65,26 @@ std::shared_ptr<DataLine> PipeBranch::createDataline(const std::pair<std::string
     return newLine;
 }
 
-bool PipeBranch::attachToPipeline(const std::vector<std::pair<std::string, GstPad*>> &pads, GstBin* parentBin) {
+bool PipeBranch::attachToPipeline(const std::vector<std::pair<std::string, GstElement*>> &pads, GstBin* parentBin) {
     // First of all add branch to pipeline
      gst_bin_add(parentBin, GST_ELEMENT(this->bin));
     
     for (auto &pad : pads) {
         g_print("PipeBranch: creating %s dataline\n", pad.first.c_str());
         
-        auto dataline = createDataline(pad);
+        auto dataline = createDataline(pad.first);
         gst_bin_add(parentBin, *dataline);
 
         auto filterSinkPad = gst_element_get_static_pad(*dataline, "sink");
-        auto branchLinkResult = gst_pad_link(pad.second, filterSinkPad);
+        auto teeSrcPad = gst_element_request_pad_simple(pad.second, "src_%u");
+        auto branchLinkResult = gst_pad_link(teeSrcPad, filterSinkPad);
         if (branchLinkResult != GstPadLinkReturn::GST_PAD_LINK_OK)
         {
             g_print("PipeBranch: failed to link dataline and uribindecode\n");
             gst_bin_remove(parentBin, *dataline);
             continue;
         }
-
+        
         auto filterSrcPad = gst_element_get_static_pad(*dataline, "src");
         auto branchPad = getSinkPad(dataline->getType());
         if (gst_pad_is_linked(branchPad)) break;
@@ -95,6 +96,7 @@ bool PipeBranch::attachToPipeline(const std::vector<std::pair<std::string, GstPa
             continue;
         }
         filters.push_back(dataline);
+        this->pads.push_back(teeSrcPad);
     }
     if (!filters.size())
         gst_bin_remove(parentBin, GST_ELEMENT(this->bin));
@@ -104,4 +106,12 @@ bool PipeBranch::attachToPipeline(const std::vector<std::pair<std::string, GstPa
 
 PipeBranch::~PipeBranch() {
     g_print("PipeBranch: destroyed one\n");
+}
+
+std::vector<std::shared_ptr<DataLine>> PipeBranch::getFilters() const {
+    return filters;
+}
+
+std::vector<GstPad*> PipeBranch::getPads() const {
+    return pads;
 }

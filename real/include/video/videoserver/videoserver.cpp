@@ -34,8 +34,10 @@ Videoserver::~Videoserver() {
 }
 
 std::shared_ptr<Source> Videoserver::openSource(const std::string& source) {
-    if (!aliveSources.contains(source)) 
+    if (!aliveSources.contains(source)) {
+        g_print("Videoserver: created new source %s\n", source.c_str());
         aliveSources[source] = std::make_shared<Source>(source);
+    }
         
     return aliveSources.at(source);
 }

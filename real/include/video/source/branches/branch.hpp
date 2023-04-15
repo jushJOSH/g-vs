@@ -13,42 +13,45 @@ public:
     virtual ~PipeBranch();
 
     // Getters
+    std::vector<std::shared_ptr<DataLine>> getFilters() const;
     virtual GstPad *getSinkPad(DataLine::LineType type) = 0;
     virtual GstElement *getFirstElement() const = 0;
+    std::vector<GstPad*> getPads() const;
     GstElement *getLastElement() const;
-    GstBin* getBin() const;
     std::string getUUID() const;
+    GstBin* getBin() const;
 
     // Update params
-    void updateBitrate(int bitrate);
     void updateResolution(const std::string resolution);
-    void updateFrameRate(int fps);
     void updateAudioQuality(double quality);
     void updateAudioVolume(double volume);
+    void updateBitrate(int bitrate);
+    void updateFrameRate(int fps);
     void mute(bool state);
 
     // Setters
-    GstStateChangeReturn setState(GstState state = GST_STATE_PLAYING);
+    bool syncState();
     void setMuxer(GstElement* muxer);
     void setSink(GstElement* sink);
 
     // Bin ops
-    virtual bool loadBin() = 0;
     virtual void unloadBin() = 0;
+    virtual bool loadBin() = 0;
     
     // Attach to pipeline
-    bool attachToPipeline(const std::vector<std::pair<std::string, GstPad*>> &pads, GstBin* parentBin);
+    bool attachToPipeline(const std::vector<std::pair<std::string, GstElement*>> &pads, GstBin* parentBin);
 
 protected:
-    std::shared_ptr<DataLine> createDataline(const std::pair<std::string, GstPad*> &pad);
+    std::shared_ptr<DataLine> createDataline(const std::string &padType);
 
 protected:
-    std::string uuid;
     std::vector<std::shared_ptr<DataLine>> filters;
+    std::vector<GstPad*> pads;
+    std::string uuid;
+
     SourceConfigDto config;
 
     GstElement* muxer;
     GstElement* sink;
-
     GstBin *bin;
 };

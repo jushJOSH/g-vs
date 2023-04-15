@@ -38,10 +38,10 @@ void StreamBranch::unloadBin() {
 }
 
 GstPad* StreamBranch::getSinkPad(DataLine::LineType type) {
-    auto newPad = gst_element_get_request_pad(muxer, "sink_%u");
+    auto newPad = gst_element_request_pad_simple(muxer, "sink_%u");
 
     auto padName = std::string(gst_pad_get_name(newPad));
-    auto ghostName = str(format("%1%_%2%_ghost") % uuid % padName);
+    auto ghostName = str(format("%1%_ghost") % padName);
 
     auto ghostPad = gst_ghost_pad_new(
             ghostName.c_str(),

@@ -22,6 +22,7 @@ public:
     
     GstStateChangeReturn setState(GstState state = GST_STATE_PLAYING);
 
+    GstElement* getQueue() const;
     operator GstElement*();
     operator GstBin*();
 
@@ -30,8 +31,8 @@ public:
 
 protected:
     virtual void generateSrcPad() const = 0;
-    void generateSinkPad() const;
     virtual GstElement* createEncoder() = 0;
+    void generateSinkPad() const;
 
 protected:
     LineType type;

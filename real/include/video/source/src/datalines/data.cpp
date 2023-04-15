@@ -52,3 +52,7 @@ DataLine::operator GstElement*() {
 DataLine::operator GstBin*() {
     return this->bin;
 }
+
+GstElement *DataLine::getQueue() const {
+    return queue;
+}
