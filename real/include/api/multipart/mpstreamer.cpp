@@ -1,8 +1,7 @@
 #include <api/multipart/mpstreamer.hpp>
 
 #include <oatpp/core/macro/component.hpp>
-
-#include <thread>
+#include <video/videoserver/videoserver.hpp>
 
 std::shared_ptr<Part> MPStreamer::readNextPart(oatpp::async::Action& action) {
     branch->waitSample();
@@ -32,5 +31,11 @@ void MPStreamer::writeNextPart(const std::shared_ptr<Part>& part, oatpp::async::
 }
 
 MPStreamer::~MPStreamer() {
-    source->removeBranch(branch);
+    OATPP_LOGD("MPStreamer", "Deleted one");
+    g_print("Use count:\n%ld for source\n%ld for branch\n", source.use_count(), branch.use_count());
+    auto uuid = branch->getUUID();
+    auto src = source->getSource();
+    
+    OATPP_COMPONENT(std::shared_ptr<Videoserver>, videoserver);
+    videoserver->removeBranchFromSource(src, uuid);
 }

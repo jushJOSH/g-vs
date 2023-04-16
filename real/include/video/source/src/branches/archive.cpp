@@ -73,6 +73,5 @@ GstElement *ArchiveBranch::getFirstElement() const {
 ArchiveBranch::~ArchiveBranch() {
     g_print("ArchiveBranch: destroyed one\n");
 
-    gst_element_send_event(GST_ELEMENT(bin), gst_event_new_eos());
     unloadBin();
 }

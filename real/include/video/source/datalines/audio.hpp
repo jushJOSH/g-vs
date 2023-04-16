@@ -26,5 +26,4 @@ private:
 private:
     GstElement *audioconverter;
     GstElement *volume;
-    GstElement *audioencoder;
 };

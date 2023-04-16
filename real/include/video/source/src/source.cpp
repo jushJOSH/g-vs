@@ -12,7 +12,8 @@ Source::Source()
 Source::Source(const std::string &source)
 :   Source()
 {   
-    sourceElements = std::make_shared<PipeTree>(source);
+    sourceElements = std::make_unique<PipeTree>(source);
+    this->source = source;
 }
 
 Source::Source(const std::string &source, SourceConfigDto& config)
@@ -52,6 +53,14 @@ std::shared_ptr<ArchiveBranch> Source::runArchive(const std::string &path) {
     return archiveBranch;
 }
 
-void Source::removeBranch(std::shared_ptr<PipeBranch> branch) {
-    sourceElements->removeBranch(branch->getUUID());
+void Source::removeBranch(const std::string &branchid) {
+    sourceElements->removeBranch(branchid);
+}
+
+bool Source::isEmpty() const {
+    return sourceElements->noMoreBranches();
+}
+
+std::string Source::getSource() const {
+    return source;
 }

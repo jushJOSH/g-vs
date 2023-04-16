@@ -19,22 +19,22 @@ VideoLine::VideoLine(
 :   DataLine(DataLine::LineType::Video, encoder),
     videoconverter(gst_element_factory_make("videoconvert", str(format("%1%_videoconvert") % uuid).c_str())),
     videoscale(gst_element_factory_make("videoscale", str(format("%1%_videoscale") % uuid).c_str())),
-    videorate(gst_element_factory_make("videorate", str(format("%1%_videorate") % uuid).c_str())),
-    videoencoder(createEncoder())
+    videorate(gst_element_factory_make("videorate", str(format("%1%_videorate") % uuid).c_str()))
 {
+    this->encoder = createEncoder();
     g_print("Created videoline %s\n", uuid.c_str());
 
     gst_bin_add_many(this->bin, 
                      this->videoconverter, 
                      this->videoscale, 
                      this->videorate, 
-                     this->videoencoder, NULL);
+                     this->encoder, NULL);
 
     bool isLinkedOk = 
         gst_element_link(this->queue, this->videoconverter) &&
         gst_element_link(this->videoconverter, this->videoscale) &&
         gst_element_link(this->videoscale, this->videorate) &&
-        gst_element_link(this->videorate, this->videoencoder);
+        gst_element_link(this->videorate, this->encoder);
 
     if (!isLinkedOk)
         throw std::runtime_error("Failed to create videoline");
@@ -73,7 +73,7 @@ VideoLine::Resolution VideoLine::strToResolution(const std::string &resolution_s
 }
 
 void VideoLine::generateSrcPad() const {
-    auto staticPad = gst_element_get_static_pad(videoencoder, "src");
+    auto staticPad = gst_element_get_static_pad(encoder, "src");
     auto ghostPad = gst_ghost_pad_new("src", staticPad);
 
     gst_element_add_pad(GST_ELEMENT(bin), ghostPad);
@@ -81,6 +81,7 @@ void VideoLine::generateSrcPad() const {
 }
 
 VideoLine::~VideoLine() {
+    g_print("Videoline: destroyed one\n");
     gst_element_send_event(GST_ELEMENT(this->bin), gst_event_new_eos());
     gst_element_set_state(GST_ELEMENT(bin), GST_STATE_NULL);
     gst_bin_remove_many(this->bin, 
@@ -88,11 +89,14 @@ VideoLine::~VideoLine() {
                         this->videoconverter, 
                         this->videoscale,
                         this->videorate,
-                        this->videoencoder, NULL);
+                        this->encoder, NULL);
+
+    auto padParent = gst_pad_get_parent_element(previousPad);
+    gst_element_release_request_pad(padParent, previousPad);
 }
 
 void VideoLine::updateBitrate(int bitrate) {
-    g_object_set(videoencoder, "bitrate", bitrate, NULL);
+    g_object_set(encoder, "bitrate", bitrate, NULL);
 }
 
 void VideoLine::updateResolution(const std::string &resolution) {

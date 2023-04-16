@@ -53,6 +53,30 @@ DataLine::operator GstBin*() {
     return this->bin;
 }
 
-GstElement *DataLine::getQueue() const {
-    return queue;
+GstPad *DataLine::getPreviousPad() const {
+    return previousPad;
+}
+
+GstPadLinkReturn DataLine::attachToPipeline(GstPad* srcpad) {
+    auto myPad = gst_element_get_static_pad(GST_ELEMENT(bin), "sink");
+    if (gst_pad_is_linked(myPad)) return GST_PAD_LINK_WAS_LINKED;
+    this->previousPad = srcpad;
+
+    auto linkResult = gst_pad_link(srcpad, myPad);
+    gst_object_unref(myPad);
+    return linkResult;
+}
+
+void DataLine::detachFromPipeline() {
+    auto myPad = gst_element_get_static_pad(GST_ELEMENT(bin), "sink");
+    gst_pad_unlink(previousPad, myPad);
+    gst_element_send_event(encoder, gst_event_new_eos());
+}
+
+GstElement* DataLine::getEncoder() const {
+    return this->encoder;
+}
+
+bool DataLine::sync() {
+    return gst_element_sync_state_with_parent(GST_ELEMENT(bin));
 }

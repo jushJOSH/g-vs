@@ -40,8 +40,8 @@ std::string PipeBranch::getUUID() const {
     return uuid;
 }
 
-std::shared_ptr<DataLine> PipeBranch::createDataline(const std::string &padType) {
-    g_print("PipeBranch: creating new dataline\n");
+std::shared_ptr<DataLine> PipeBranch::createFilter(const std::string &padType) {
+    g_print("PipeBranch: creating new filter\n");
     
     std::shared_ptr<DataLine> newLine;
 
@@ -65,19 +65,41 @@ std::shared_ptr<DataLine> PipeBranch::createDataline(const std::string &padType)
     return newLine;
 }
 
+GstPadLinkReturn PipeBranch::addFilter(std::shared_ptr<DataLine> filter) {
+    auto filterSrcPad = gst_element_get_static_pad(*filter, "src");
+    auto branchPad = getSinkPad(filter->getType());
+
+    if (gst_pad_is_linked(branchPad)) GST_PAD_LINK_WAS_LINKED;
+
+    auto linkResult = gst_pad_link(filterSrcPad, branchPad);
+    gst_object_unref(filterSrcPad);
+
+    return linkResult;
+}
+
 bool PipeBranch::attachToPipeline(const std::vector<std::pair<std::string, GstElement*>> &pads, GstBin* parentBin) {
     // First of all add branch to pipeline
-     gst_bin_add(parentBin, GST_ELEMENT(this->bin));
+    gst_bin_add(parentBin, GST_ELEMENT(this->bin));
+    if (!sync())
+        g_print("PipeBranch: sync failed!\n");
     
     for (auto &pad : pads) {
         g_print("PipeBranch: creating %s dataline\n", pad.first.c_str());
         
-        auto dataline = createDataline(pad.first);
+        auto dataline = createFilter(pad.first);
         gst_bin_add(parentBin, *dataline);
+        if (!dataline->sync())
+            g_print("Filter %s: sync failed!\n", dataline->getUUID().c_str());
 
-        auto filterSinkPad = gst_element_get_static_pad(*dataline, "sink");
+        auto filterLinkResult = addFilter(dataline);
+        if (filterLinkResult != GstPadLinkReturn::GST_PAD_LINK_OK) {
+            g_print("PipeBranch: failed to link dataline and branch\n");
+            gst_bin_remove(parentBin, *dataline);
+            continue;
+        }
+        
         auto teeSrcPad = gst_element_request_pad_simple(pad.second, "src_%u");
-        auto branchLinkResult = gst_pad_link(teeSrcPad, filterSinkPad);
+        auto branchLinkResult = dataline->attachToPipeline(teeSrcPad);
         if (branchLinkResult != GstPadLinkReturn::GST_PAD_LINK_OK)
         {
             g_print("PipeBranch: failed to link dataline and uribindecode\n");
@@ -85,21 +107,13 @@ bool PipeBranch::attachToPipeline(const std::vector<std::pair<std::string, GstEl
             continue;
         }
         
-        auto filterSrcPad = gst_element_get_static_pad(*dataline, "src");
-        auto branchPad = getSinkPad(dataline->getType());
-        if (gst_pad_is_linked(branchPad)) break;
-        
-        auto filterLinkResult = gst_pad_link(filterSrcPad, branchPad);
-        if (filterLinkResult != GstPadLinkReturn::GST_PAD_LINK_OK) {
-            g_print("PipeBranch: failed to link dataline and branch\n");
-            gst_bin_remove(parentBin, *dataline);
-            continue;
-        }
         filters.push_back(dataline);
-        this->pads.push_back(teeSrcPad);
     }
     if (!filters.size())
+    {
+        gst_element_set_state(GST_ELEMENT(this->bin), GST_STATE_NULL);
         gst_bin_remove(parentBin, GST_ELEMENT(this->bin));
+    }
 
     return filters.size();
 }
@@ -112,6 +126,17 @@ std::vector<std::shared_ptr<DataLine>> PipeBranch::getFilters() const {
     return filters;
 }
 
-std::vector<GstPad*> PipeBranch::getPads() const {
-    return pads;
+void PipeBranch::removeFilter(const std::string &uuid) {
+    auto pos = std::find_if(filters.begin(), filters.end(), 
+    [uuid](const std::shared_ptr<DataLine>& elem) {
+        return elem->getUUID() == uuid;
+    });
+
+    if (pos == filters.end()) return;
+
+    filters.erase(pos);
+}
+
+bool PipeBranch::sync() {
+    return gst_element_sync_state_with_parent(GST_ELEMENT(bin));
 }

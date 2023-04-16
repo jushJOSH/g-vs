@@ -16,7 +16,6 @@ public:
     std::vector<std::shared_ptr<DataLine>> getFilters() const;
     virtual GstPad *getSinkPad(DataLine::LineType type) = 0;
     virtual GstElement *getFirstElement() const = 0;
-    std::vector<GstPad*> getPads() const;
     GstElement *getLastElement() const;
     std::string getUUID() const;
     GstBin* getBin() const;
@@ -30,9 +29,13 @@ public:
     void mute(bool state);
 
     // Setters
-    bool syncState();
+    GstPadLinkReturn addFilter(std::shared_ptr<DataLine> filter);
     void setMuxer(GstElement* muxer);
     void setSink(GstElement* sink);
+    bool syncState();
+
+    // Remove
+    void removeFilter(const std::string &uuid);
 
     // Bin ops
     virtual void unloadBin() = 0;
@@ -40,13 +43,13 @@ public:
     
     // Attach to pipeline
     bool attachToPipeline(const std::vector<std::pair<std::string, GstElement*>> &pads, GstBin* parentBin);
+    bool sync();
 
 protected:
-    std::shared_ptr<DataLine> createDataline(const std::string &padType);
+    std::shared_ptr<DataLine> createFilter(const std::string &padType);
 
 protected:
     std::vector<std::shared_ptr<DataLine>> filters;
-    std::vector<GstPad*> pads;
     std::string uuid;
 
     SourceConfigDto config;

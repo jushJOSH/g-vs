@@ -19,20 +19,20 @@ class PipeTree {
 private:
     struct PadInfo {
         GstBin* bin;
-        GstState currentState;
 
         SourceConfigDto config;
         
         std::queue<std::shared_ptr<PipeBranch>> branchQueue;
         std::unordered_map<std::string, std::shared_ptr<PipeBranch>> branches;
         std::vector<std::pair<std::string, GstElement*>> createdPads;
+        std::vector<GstElement*> dynamicElements;
         bool noMorePads = false;
     };
 
     struct RemoveBranch {
         int currIdx;
         std::shared_ptr<PipeBranch> branch;
-        std::unordered_map<std::string, std::shared_ptr<PipeBranch>> branches;     
+        std::unordered_map<std::string, std::shared_ptr<PipeBranch>> *branches;     
         GstBin* bin;
     };
 
@@ -50,13 +50,13 @@ public:
     void setConfig(SourceConfigDto& config);
 
     GstElement* getSink(const std::string &name);
-    std::vector<std::shared_ptr<DataLine>> &getDatalines();
+    bool noMoreBranches() const;
 
 private:
-    static GstPadProbeReturn padProbeCallback(GstPad* pad, GstPadProbeInfo *info, gpointer user_data);
-    static GstPadProbeReturn eventProbeCallback(GstPad* pad, GstPadProbeInfo *info, gpointer user_data);
+    static GstPadProbeReturn branchUnlinkProbe(GstPad* pad, GstPadProbeInfo *info, gpointer user_data);
+    static GstPadProbeReturn branchEosProbe(GstPad* pad, GstPadProbeInfo *info, gpointer user_data);
     static void onNewPad(GstElement *src, GstPad *newPad, PadInfo* data);
-    static void onErrorCallback(GstBus *bus, GstMessage *msg, gpointer data);
+    static void onError(GstBus *bus, GstMessage *msg, gpointer data);
     static int manageBranchQueue(PadInfo& data);
     static void onNoMorePads(GstElement* src, PadInfo* data);
     static std::shared_ptr<DataLine> createDataline(const std::pair<std::string, GstPad*> &pad, const PadInfo &userData);
@@ -68,6 +68,5 @@ private:
     
     // Uri decode bin
     GstElement* source;
-    GstElement* tee;
     GstElement* pipeline;
 };

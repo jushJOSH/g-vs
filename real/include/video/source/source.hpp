@@ -27,9 +27,11 @@ public:
 
     // Get/Set things
     std::string getUUID() const;
+    std::string getSource() const;
     GstStateChangeReturn setState(GstState state = GST_STATE_PLAYING);
     std::shared_ptr<StreamBranch::CallbackArg> getArg();
     void setConfig(SourceConfigDto& config);
+    bool isEmpty() const;
 
     // Branch management
     // Stream
@@ -38,7 +40,7 @@ public:
     // Archive
     std::shared_ptr<ArchiveBranch> runArchive(const std::string &path);
     
-    void removeBranch(std::shared_ptr<PipeBranch> branch);
+    void removeBranch(const std::string& branchid);
 
 protected:
     std::string source;
@@ -46,5 +48,5 @@ protected:
     GstPipeline* pipeline;
 
     std::string uuid;
-    std::shared_ptr<PipeTree> sourceElements;
+    std::unique_ptr<PipeTree> sourceElements;
 };

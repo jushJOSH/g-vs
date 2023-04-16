@@ -11,48 +11,45 @@
 using boost::format;
 using boost::str;
 
-GstPadProbeReturn PipeTree::eventProbeCallback(GstPad* pad, GstPadProbeInfo *info, gpointer user_data) {
+GstPadProbeReturn PipeTree::branchEosProbe(GstPad* pad, GstPadProbeInfo *info, gpointer user_data) {
     if (GST_EVENT_TYPE (GST_PAD_PROBE_INFO_DATA (info)) != GST_EVENT_EOS)
         return GST_PAD_PROBE_OK;
+    gst_pad_remove_probe(pad, GST_PAD_PROBE_INFO_ID(info));
 
     g_print("Entered eos probe call\n");
     RemoveBranch *branchdata = (RemoveBranch*)user_data;
     g_print("Target: %s\n", branchdata->branch->getUUID().c_str());
 
-    gst_pad_remove_probe(pad, GST_PAD_PROBE_INFO_ID(info));
-    branchdata->branches.erase(branchdata->branch->getUUID());
+    auto targetFilter = branchdata->branch->getFilters()[branchdata->currIdx];
+    branchdata->branch->removeFilter(targetFilter->getUUID());
+    
+    if (!branchdata->branch->getFilters().size())
+        branchdata->branches->erase(branchdata->branch->getUUID());
 
     delete branchdata;
 
     return GST_PAD_PROBE_DROP;
 }
 
-GstPadProbeReturn PipeTree::padProbeCallback(GstPad* pad, GstPadProbeInfo *info, gpointer user_data) {
+GstPadProbeReturn PipeTree::branchUnlinkProbe(GstPad* pad, GstPadProbeInfo *info, gpointer user_data) {
+    gst_pad_remove_probe(pad, GST_PAD_PROBE_INFO_ID(info));
     g_print("Entered pad probe call\n");
     RemoveBranch *branchdata = (RemoveBranch*)user_data;
     g_print("Target: %s\n", branchdata->branch->getUUID().c_str());
-    
-    GstPad *src, *sink;
-
-    // Removing probe
-    gst_pad_remove_probe(pad, GST_PAD_PROBE_INFO_ID(info));
 
     // Setting up new probe for EOS event
     auto filter = branchdata->branch->getFilters()[branchdata->currIdx];
-    src = gst_element_get_static_pad (filter->getQueue(), "src");
+    auto src = gst_element_get_static_pad (filter->getEncoder(), "src");
     gst_pad_add_probe (src, 
         (GstPadProbeType)(GST_PAD_PROBE_TYPE_BLOCK | GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM),
-        eventProbeCallback, user_data, NULL);
+        branchEosProbe, user_data, NULL);
     gst_object_unref (src);
-
-    sink = gst_element_get_static_pad (filter->getQueue(), "sink");
-    gst_pad_send_event (sink, gst_event_new_eos ());
-    gst_object_unref (sink);
+    filter->detachFromPipeline();
 
     return GST_PAD_PROBE_OK;
 }
 
-void PipeTree::onErrorCallback(GstBus *bus, GstMessage *msg, gpointer data) {
+void PipeTree::onError(GstBus *bus, GstMessage *msg, gpointer data) {
     GError *err;
     gchar *debug_info;
 
@@ -94,7 +91,10 @@ void PipeTree::onNewPad(GstElement* element, GstPad* newPad, PadInfo* userData) 
 
     auto teeSinkPad = gst_element_get_static_pad(tee, "sink");
     gst_bin_add(userData->bin, tee);
+    gst_element_sync_state_with_parent(tee);
     auto linkResult = gst_pad_link(newPad, teeSinkPad);
+    
+    userData->dynamicElements.push_back(tee);
 
     // Check new pad type
     GstCaps *pad_caps = gst_pad_get_current_caps (newPad);
@@ -123,7 +123,7 @@ PipeTree::PipeTree()
     // Creating error callback from pipeline bus
     auto bus = gst_element_get_bus (pipeline);
     gst_bus_add_signal_watch (bus);
-    g_signal_connect (G_OBJECT (bus), "message::error", G_CALLBACK(onErrorCallback), nullptr);
+    g_signal_connect (G_OBJECT (bus), "message::error", G_CALLBACK(onError), nullptr);
     gst_object_unref (bus);
 }
 
@@ -137,6 +137,10 @@ PipeTree::~PipeTree() {
     g_print("Deleted tree %s\n", uuid.c_str());
 
     gst_element_set_state(pipeline, GST_STATE_NULL);
+    gst_bin_remove(GST_BIN(pipeline), source);
+    for (auto elem : padinfo.dynamicElements) 
+        gst_bin_remove(GST_BIN(pipeline), elem);
+
     gst_object_unref(pipeline);
 }
 
@@ -154,11 +158,11 @@ void PipeTree::addBranch(std::shared_ptr<PipeBranch> branch) {
 void PipeTree::removeBranch(const std::string& name) {
     if (!padinfo.branches.contains(name)) return;
     
-    auto pads = padinfo.branches.at(name)->getPads();
-    for (int i = 0; i < pads.size(); ++i) {
-        RemoveBranch *arg = new RemoveBranch{ i, padinfo.branches.at(name), padinfo.branches };
-        gst_pad_add_probe (pads[i], GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM,
-                           padProbeCallback, arg, NULL);
+    auto filters = padinfo.branches.at(name)->getFilters();
+    for (int i = 0; i < filters.size(); ++i) {
+        RemoveBranch *arg = new RemoveBranch{ i, padinfo.branches.at(name), &padinfo.branches };
+        gst_pad_add_probe (filters[i]->getPreviousPad(), GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM,
+                           branchUnlinkProbe, arg, NULL);
     }
 }
 
@@ -179,12 +183,13 @@ void PipeTree::setSource(const std::string &source) {
 
 GstStateChangeReturn PipeTree::setState(GstState state) {
     auto stateResult = gst_element_set_state(pipeline, state);
-    if (stateResult != GstStateChangeReturn::GST_STATE_CHANGE_FAILURE)
-        padinfo.currentState = state;
-
     return stateResult;
 }
 
 void PipeTree::setConfig(SourceConfigDto& config) {
     padinfo.config = config;
+}
+
+bool PipeTree::noMoreBranches() const {
+    return padinfo.branches.empty();
 }

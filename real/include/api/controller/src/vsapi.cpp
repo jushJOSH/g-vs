@@ -13,8 +13,6 @@ VSTypes::OatResponse VsapiController::getLive() {
         "application/octet-stream",
         true
     );
-
-    auto stateResult = source->setState();
-    g_print("Status %d\n", stateResult);
+    
     return OutgoingResponse::createShared(Status::CODE_200, body);
 }

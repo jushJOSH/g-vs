@@ -34,6 +34,9 @@ void stopMainLoop();
 // Gets created source if exists
 std::shared_ptr<Source> openSource(const std::string& source);
 
+// Removes branch from source
+void removeBranchFromSource(const std::string &source, const std::string &branch);
+
 /// @brief Allows to get current GST main loop
 /// @return  GMainLoop* GST Main loop
 GMainLoop *getMainLoop() const;

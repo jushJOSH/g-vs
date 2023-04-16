@@ -22,13 +22,18 @@ public:
     
     GstStateChangeReturn setState(GstState state = GST_STATE_PLAYING);
 
-    GstElement* getQueue() const;
+    GstPadLinkReturn attachToPipeline(GstPad* srcpad);
+    void detachFromPipeline();
+
+    GstPad* getPreviousPad() const;
+    GstElement* getEncoder() const;
     operator GstElement*();
     operator GstBin*();
 
     std::string getUUID() const;
     LineType getType() const;
 
+    bool sync();
 protected:
     virtual void generateSrcPad() const = 0;
     virtual GstElement* createEncoder() = 0;
@@ -41,4 +46,7 @@ protected:
 
     GstBin *bin;
     GstElement *queue;
+    GstElement *encoder;
+    
+    GstPad* previousPad;
 };

@@ -31,5 +31,4 @@ private:
     GstElement *videoconverter;
     GstElement *videoscale;
     GstElement *videorate;
-    GstElement *videoencoder;
 };
