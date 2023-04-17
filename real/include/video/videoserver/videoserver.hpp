@@ -18,6 +18,11 @@ enum class Accelerator {
     AMD, NVIDIA, CPU
 };
 
+struct RemoveBranchData {
+    Source *targetSource;
+    std::unordered_map<std::string, std::shared_ptr<Source>> *allSources;
+};
+
 public:
 /// @brief Videoserver HTTP constructor
 /// @param accelerator Which hardware accelerator to use
@@ -42,6 +47,9 @@ void removeBranchFromSource(const std::string &source, const std::string &branch
 GMainLoop *getMainLoop() const;
 
 static Accelerator accelerator;
+
+private:
+    static void onBranchRemoved(void* data);
 
 private:
 // --- GStreamer params ---

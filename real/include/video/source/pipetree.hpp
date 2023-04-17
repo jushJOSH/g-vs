@@ -14,6 +14,7 @@
 #include <video/source/branches/stream.hpp>
 
 class PipeBranch;
+class Source;
 
 class PipeTree {
 private:
@@ -29,17 +30,23 @@ private:
         bool noMorePads = false;
     };
 
+    struct CallbackData {
+        std::function<void(void*)> cb;
+        void *data;
+    };
+
     struct RemoveBranch {
         int currIdx;
         std::shared_ptr<PipeBranch> branch;
-        std::unordered_map<std::string, std::shared_ptr<PipeBranch>> *branches;     
-        GstBin* bin;
+        std::unordered_map<std::string, std::shared_ptr<PipeBranch>> *branches;
+
+        CallbackData *cbdata = nullptr;
     };
 
 public:
     PipeTree();
     PipeTree(const std::string &source);
-    PipeTree(const SourceConfigDto& config, const std::string &source);
+    PipeTree(const SourceConfigDto& config, std::string &source);
     ~PipeTree();
 
     void setSource(const std::string& source);
@@ -51,6 +58,8 @@ public:
 
     GstElement* getSink(const std::string &name);
     bool noMoreBranches() const;
+
+    void setOnBranchDeleted(const std::function<void(void*)> callback, void* data);
 
 private:
     static GstPadProbeReturn branchUnlinkProbe(GstPad* pad, GstPadProbeInfo *info, gpointer user_data);
@@ -65,6 +74,7 @@ private:
     // Map of 'name' of branch and branch itself
     std::string uuid;
     PadInfo padinfo;
+    CallbackData cbdata;
     
     // Uri decode bin
     GstElement* source;

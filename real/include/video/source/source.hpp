@@ -31,10 +31,12 @@ public:
     GstStateChangeReturn setState(GstState state = GST_STATE_PLAYING);
     void setConfig(SourceConfigDto& config);
     bool isEmpty() const;
+    void setRemoveBranchCallback(const std::function<void(void*)> callback, void* data);
 
     // Branch management
     // Stream
     std::shared_ptr<StreamBranch> runStream();
+    std::shared_ptr<StreamBranch> runStream(std::condition_variable* untilBranchReady, std::mutex *commonBranchMutex);
 
     // Archive
     std::shared_ptr<ArchiveBranch> runArchive(const std::string &path);

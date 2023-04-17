@@ -26,6 +26,8 @@ GstPadProbeReturn PipeTree::branchEosProbe(GstPad* pad, GstPadProbeInfo *info, g
     if (!branchdata->branch->getFilters().size()) {
         g_print("Remove branch itself\n");
         branchdata->branches->erase(branchdata->branch->getUUID());
+        if (branchdata->cbdata != nullptr)
+            branchdata->cbdata->cb(branchdata->cbdata->data);
     }
 
     delete branchdata;
@@ -162,7 +164,7 @@ void PipeTree::removeBranch(const std::string& name) {
     
     auto filters = padinfo.branches.at(name)->getFilters();
     for (int i = 0; i < filters.size(); ++i) {
-        RemoveBranch *arg = new RemoveBranch{ i, padinfo.branches.at(name), &padinfo.branches };
+        RemoveBranch *arg = new RemoveBranch{ i, padinfo.branches.at(name), &padinfo.branches, &cbdata };
         gst_pad_add_probe (filters[i]->getPreviousPad(), GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM,
                            branchUnlinkProbe, arg, NULL);
     }
@@ -194,4 +196,9 @@ void PipeTree::setConfig(SourceConfigDto& config) {
 
 bool PipeTree::noMoreBranches() const {
     return padinfo.branches.empty();
+}
+
+void PipeTree::setOnBranchDeleted(const std::function<void(void*)> callback, void* data) {
+    this->cbdata.cb = callback;
+    this->cbdata.data = data;
 }

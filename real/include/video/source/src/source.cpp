@@ -45,6 +45,14 @@ std::shared_ptr<StreamBranch> Source::runStream() {
     return streamBranch;
 }
 
+std::shared_ptr<StreamBranch> Source::runStream(std::condition_variable* untilBranchReady, std::mutex *commonBranchMutex) {
+    auto streamBranch = std::make_shared<StreamBranch>(untilBranchReady, commonBranchMutex);
+    sourceElements->addBranch(streamBranch);
+
+    return streamBranch;
+}
+
+
 std::shared_ptr<ArchiveBranch> Source::runArchive(const std::string &path) {
     auto archiveBranch = std::make_shared<ArchiveBranch>(path);
     sourceElements->addBranch(archiveBranch);
@@ -62,4 +70,8 @@ bool Source::isEmpty() const {
 
 std::string Source::getSource() const {
     return source;
+}
+
+void Source::setRemoveBranchCallback(const std::function<void(void*)> callback, void* data) {
+    sourceElements->setOnBranchDeleted(callback, data);
 }

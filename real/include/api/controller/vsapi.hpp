@@ -5,6 +5,9 @@
 #include <oatpp/core/macro/codegen.hpp>
 #include <oatpp/core/macro/component.hpp>
 
+#include <condition_variable>
+#include <mutex>
+
 #include <api/multipart/mpstreamer.hpp>
 #include <types.hpp>
 
@@ -24,9 +27,9 @@ public:
     }
 
 // Endpoint callbacks
-protected:
-//    VSTypes::OatResponse makeToken();
-//    VSTypes::OatResponse refreshToken();
+private:
+    std::condition_variable untilBranchReady;
+    std::mutex commonBranchMutex;
 
 // Endpoints
 public:

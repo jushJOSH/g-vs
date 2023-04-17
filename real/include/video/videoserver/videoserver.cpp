@@ -36,8 +36,13 @@ Videoserver::~Videoserver() {
 std::shared_ptr<Source> Videoserver::openSource(const std::string& source) {
     if (!aliveSources.contains(source)) {
         g_print("Videoserver: created new source %s\n", source.c_str());
-        aliveSources[source] = std::make_shared<Source>(source);
-        aliveSources[source]->setState();
+        auto newSource = std::make_shared<Source>(source);
+        newSource->setRemoveBranchCallback(onBranchRemoved, new RemoveBranchData {
+            newSource.get(),
+            &aliveSources
+        });
+        newSource->setState();
+        aliveSources[source] = newSource;
     }
         
     return aliveSources.at(source);
@@ -48,6 +53,14 @@ void Videoserver::removeBranchFromSource(const std::string &source, const std::s
 
     auto targetSrc = aliveSources.at(source);
     targetSrc->removeBranch(branch);
-    if (targetSrc->isEmpty())
-        aliveSources.erase(source);
+}
+
+void Videoserver::onBranchRemoved(void* data) {
+    RemoveBranchData* removeData = (RemoveBranchData*)data;
+    g_print("onBranchRemoved callback fired!\n");
+
+    if (removeData->targetSource->isEmpty()) {
+        removeData->allSources->erase(removeData->targetSource->getSource());
+        delete removeData;
+    }
 }

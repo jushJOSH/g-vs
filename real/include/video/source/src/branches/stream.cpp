@@ -12,7 +12,6 @@
 using boost::format;
 using boost::str;
 
-// TODO make queue lenght in config
 StreamBranch::StreamBranch()
 :   PipeBranch(
         "appsink",
@@ -25,7 +24,14 @@ StreamBranch::StreamBranch()
         throw std::runtime_error("Could not link elements for some reason...");
 
     g_object_set(sink, "emit-signals", true, NULL);
-    g_signal_connect(sink, "new-sample", G_CALLBACK(sampleAquired), &ready);
+    g_signal_connect(sink, "new-sample", G_CALLBACK(sampleAquired), &arg);
+}
+
+StreamBranch::StreamBranch(std::condition_variable* untilBranchReady, std::mutex *commonBranchMutex) 
+:   StreamBranch()
+{
+    arg.untilBranchReady = untilBranchReady;
+    arg.commonBranchMutex = commonBranchMutex;
 }
 
 bool StreamBranch::loadBin() {
@@ -68,11 +74,16 @@ StreamBranch::~StreamBranch() {
     unloadBin();
 }
 
-GstFlowReturn StreamBranch::sampleAquired(GstElement* appsink, std::atomic_bool *ready) {
+GstFlowReturn StreamBranch::sampleAquired(GstElement* appsink, BranchReadyArg *arg) {
     auto sample = Sample(gst_app_sink_pull_sample(GST_APP_SINK(appsink)));
     if (!sample.isNull()) {
         g_print("StreamBranch: lets think branch is ready to transmit funny\n");
-        *ready = true;
+        if (arg->commonBranchMutex != nullptr && arg->untilBranchReady != nullptr) {
+            std::lock_guard<std::mutex> lock(*arg->commonBranchMutex);
+            arg->ready = true;
+            arg->untilBranchReady->notify_all();
+        }
+        else arg->ready = true;
         g_object_set(appsink, "emit-signals", false, NULL);
     }
 
@@ -80,5 +91,5 @@ GstFlowReturn StreamBranch::sampleAquired(GstElement* appsink, std::atomic_bool 
 }
 
 bool StreamBranch::isReady() const {
-    return ready;
+    return arg.ready;
 }

@@ -3,9 +3,7 @@
 #include <oatpp/core/macro/component.hpp>
 #include <video/videoserver/videoserver.hpp>
 
-std::shared_ptr<Part> MPStreamer::readNextPart(oatpp::async::Action& action) {
-    while(!branch->isReady());
-    
+std::shared_ptr<Part> MPStreamer::readNextPart(oatpp::async::Action& action) {   
     auto sample = branch->getSample();
     if (sample->isNull())
         return nullptr;
@@ -21,6 +19,7 @@ std::shared_ptr<Part> MPStreamer::readNextPart(oatpp::async::Action& action) {
     auto part = std::make_shared<Part>();
     part->putHeader(oatpp::web::protocol::http::Header::CONTENT_TYPE, "video/mp4");
     part->setPayload(std::make_shared<oatpp::data::resource::InMemoryData>(data));
+    
     return part;
 }
 
