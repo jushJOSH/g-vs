@@ -23,8 +23,10 @@ GstPadProbeReturn PipeTree::branchEosProbe(GstPad* pad, GstPadProbeInfo *info, g
     auto targetFilter = branchdata->branch->getFilters()[branchdata->currIdx];
     branchdata->branch->removeFilter(targetFilter->getUUID());
     
-    if (!branchdata->branch->getFilters().size())
+    if (!branchdata->branch->getFilters().size()) {
+        g_print("Remove branch itself\n");
         branchdata->branches->erase(branchdata->branch->getUUID());
+    }
 
     delete branchdata;
 

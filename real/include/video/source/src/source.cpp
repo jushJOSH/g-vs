@@ -40,7 +40,6 @@ std::string Source::getUUID() const {
 
 std::shared_ptr<StreamBranch> Source::runStream() {
     auto streamBranch = std::make_shared<StreamBranch>();
-    streamBranch->setCallback(G_CALLBACK(StreamBranch::onNewSample));
     sourceElements->addBranch(streamBranch);
 
     return streamBranch;

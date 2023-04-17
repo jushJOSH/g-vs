@@ -23,3 +23,7 @@ void Sample::setSample(GstSample* sample) {
     this->sample = gst_sample_copy(sample);
     gst_sample_unref(sample);
 }
+
+bool Sample::isNull() const {
+    return sample == NULL;
+}

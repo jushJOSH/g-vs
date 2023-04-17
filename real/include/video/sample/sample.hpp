@@ -8,7 +8,8 @@ public:
     Sample() = default;
     
     void setSample(GstSample* sample);
-
+    bool isNull() const;
+ 
     ~Sample();
     operator GstSample*();
     operator GstSample*() const;

@@ -6,27 +6,19 @@
 
 class StreamBranch : public PipeBranch { 
 public:
-    struct CallbackArg {
-        std::mutex mutex;
-        std::shared_ptr<boost::circular_buffer<std::shared_ptr<Sample>>> samples;
-    };
-
     StreamBranch();
     ~StreamBranch();
 
     GstPad* getSinkPad(DataLine::LineType type);
     GstElement *getFirstElement() const;
     std::shared_ptr<Sample> getSample();
-    void waitSample() const;
+    bool isReady() const;
 
     bool loadBin();
     void unloadBin();
 
-    void setCallback(GCallback callback);
-
-public:
-    static GstFlowReturn onNewSample(GstElement* appsink, CallbackArg *data);
-
 private:
-    std::shared_ptr<CallbackArg> arg;
+    static GstFlowReturn sampleAquired(GstElement* appsink, std::atomic_bool *isReady);
+    
+    std::atomic_bool ready = false;
 };

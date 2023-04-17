@@ -17,14 +17,15 @@ StreamBranch::StreamBranch()
 :   PipeBranch(
         "appsink",
         "multipartmux"
-    ),
-    arg(std::make_shared<CallbackArg>())
+    )
 {
     g_print("Created stream branch %s\n", uuid.c_str());
-    arg->samples = std::make_shared<boost::circular_buffer<std::shared_ptr<Sample>>>(10);
 
     if (!loadBin())
         throw std::runtime_error("Could not link elements for some reason...");
+
+    g_object_set(sink, "emit-signals", true, NULL);
+    g_signal_connect(sink, "new-sample", G_CALLBACK(sampleAquired), &ready);
 }
 
 bool StreamBranch::loadBin() {
@@ -53,33 +54,8 @@ GstPad* StreamBranch::getSinkPad(DataLine::LineType type) {
     return ghostPad;
 }
 
-void StreamBranch::setCallback(GCallback callback) {
-    g_print("StreamBranch: Setting callback\n");
-
-    g_object_set(G_OBJECT(sink), "emit-signals", TRUE, NULL);
-    g_signal_connect(sink, "new-sample", callback, arg.get());
-}
-
 std::shared_ptr<Sample> StreamBranch::getSample() {
-    std::lock_guard<std::mutex> locker(arg->mutex);
-    
-    auto copy = arg->samples->front();
-    arg->samples->pop_front();
-
-    return copy;
-}
-
-void StreamBranch::waitSample() const {
-    while (!arg->samples->size());
-}
-
-GstFlowReturn StreamBranch::onNewSample(GstElement* appsink, CallbackArg *data)  {
-    GstSample *sample = gst_app_sink_pull_sample(GST_APP_SINK(appsink));
-
-    std::lock_guard<std::mutex> locker(data->mutex);
-    data->samples->push_back(std::make_shared<Sample>(sample));
-
-    return GST_FLOW_OK;
+    return std::make_shared<Sample>(gst_app_sink_pull_sample(GST_APP_SINK(this->sink)));
 }
 
 GstElement *StreamBranch::getFirstElement() const {
@@ -90,4 +66,19 @@ StreamBranch::~StreamBranch() {
     g_print("StreamBranch: destroyed one\n");
 
     unloadBin();
+}
+
+GstFlowReturn StreamBranch::sampleAquired(GstElement* appsink, std::atomic_bool *ready) {
+    auto sample = Sample(gst_app_sink_pull_sample(GST_APP_SINK(appsink)));
+    if (!sample.isNull()) {
+        g_print("StreamBranch: lets think branch is ready to transmit funny\n");
+        *ready = true;
+        g_object_set(appsink, "emit-signals", false, NULL);
+    }
+
+    return GST_FLOW_OK;
+}
+
+bool StreamBranch::isReady() const {
+    return ready;
 }

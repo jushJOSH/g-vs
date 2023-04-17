@@ -29,7 +29,6 @@ public:
     std::string getUUID() const;
     std::string getSource() const;
     GstStateChangeReturn setState(GstState state = GST_STATE_PLAYING);
-    std::shared_ptr<StreamBranch::CallbackArg> getArg();
     void setConfig(SourceConfigDto& config);
     bool isEmpty() const;
 

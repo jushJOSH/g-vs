@@ -46,10 +46,8 @@ GstElement* VideoLine::createEncoder() {
     std::string platform = "x";
     switch (Videoserver::accelerator) {
         case Videoserver::Accelerator::AMD:
-            platform = "amfh";
-        break;
         case Videoserver::Accelerator::NVIDIA:
-            platform = "nvcudah";          
+            platform = "vaapih";         
         break;
     }
 
