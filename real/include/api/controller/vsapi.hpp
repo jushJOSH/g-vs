@@ -8,7 +8,7 @@
 #include <condition_variable>
 #include <mutex>
 
-#include <api/multipart/mpstreamer.hpp>
+#include <api/hls/hls.hpp>
 #include <types.hpp>
 
 #include OATPP_CODEGEN_BEGIN(ApiController) //<- Begin Codegen
@@ -26,14 +26,10 @@ public:
         return std::make_shared<VsapiController>(objectMapper);
     }
 
-// Endpoint callbacks
-private:
-    std::condition_variable untilBranchReady;
-    std::mutex commonBranchMutex;
-
 // Endpoints
 public:
     ENDPOINT("GET", "/live", getLive);
+    ENDPOINT("GET", "/static")
 };
 
 #include OATPP_CODEGEN_END(ApiController) 

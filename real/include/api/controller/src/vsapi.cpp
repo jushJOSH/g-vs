@@ -2,40 +2,20 @@
 #include <video/videoserver/videoserver.hpp>
 
 #include <chrono>
-
-#include <oatpp/web/protocol/http/outgoing/MultipartBody.hpp>
+#include <thread>
 
 VSTypes::OatResponse VsapiController::getLive() {
-    // For chrono!
-    using namespace std;
-
     OATPP_COMPONENT(std::shared_ptr<Videoserver>, videoserver);
-    auto source = videoserver->openSource("https://gstreamer.freedesktop.org/data/media/sintel_trailer-480p.webm");
+    // auto source = videoserver->openSource("file:///home/egor/test.webm");
+    auto source = videoserver->openSource("rtsp://193.19.103.188:1935/live/Pl_Lunincev.stream");
+    auto firedBranch = source->runStream();
+    
+    using namespace std;
+    this_thread::sleep_for(10+s);
 
-    auto firedBranch = source->runStream(&untilBranchReady, &commonBranchMutex);
-    std::unique_lock lock(commonBranchMutex);
-    if (untilBranchReady.wait_for(
-        lock,
-        10s,
-        [firedBranch]{
-            return firedBranch->isReady();
-        }
-    ))
-    {
-        OATPP_LOGI("MPStreamer", "Ain't timed out");
-        auto multipart = std::make_shared<MPStreamer>(firedBranch, source);
-        auto body = std::make_shared<oatpp::web::protocol::http::outgoing::MultipartBody>(
-            multipart,
-            "application/octet-stream",
-            true
-        );
-
-        return OutgoingResponse::createShared(Status::CODE_200, body);
-    }
-    else 
-    {   
-        OATPP_LOGI("MPStreamer", "Connection timeout for branch");
-        videoserver->removeBranchFromSource(source->getSource(), firedBranch->getUUID());
-        return createResponse(Status::CODE_408);
-    }
+    auto response = createResponse(Status::CODE_200, oatpp::String::loadFromFile("/home/egor/hls_test/playlist.m3u8"));
+    response->putHeader("Accept-Ranges", "bytes");
+    response->putHeader(Header::CONNECTION, Header::Value::CONNECTION_KEEP_ALIVE);
+    response->putHeader(Header::CONTENT_TYPE, "application/x-mpegURL");
+    return response;
 }
