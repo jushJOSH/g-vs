@@ -69,7 +69,7 @@ GstPadLinkReturn PipeBranch::addFilter(std::shared_ptr<DataLine> filter) {
     auto filterSrcPad = gst_element_get_static_pad(*filter, "src");
     auto branchPad = getSinkPad(filter->getType());
 
-    if (gst_pad_is_linked(branchPad)) GST_PAD_LINK_WAS_LINKED;
+    if (gst_pad_is_linked(branchPad)) return GST_PAD_LINK_WAS_LINKED;
 
     auto linkResult = gst_pad_link(filterSrcPad, branchPad);
     gst_object_unref(filterSrcPad);

@@ -19,6 +19,12 @@ class PipeTree;
 
 class Source {
 public:
+    struct BusCallbackData { 
+        std::function<void(void*)> callback;
+        void* data;
+    };
+
+public:
     // Test consturctor for source
     Source();
     Source(const std::string& source);
@@ -36,18 +42,19 @@ public:
     // Branch management
     // Stream
     std::shared_ptr<StreamBranch> runStream();
-    std::shared_ptr<StreamBranch> runStream(std::condition_variable* untilBranchReady, std::mutex *commonBranchMutex);
 
     // Archive
     std::shared_ptr<ArchiveBranch> runArchive(const std::string &path);
     
     void removeBranch(const std::string& branchid);
 
+    void addBusCallback(const std::string &signal, BusCallbackData& data);
+
 protected:
     std::string source;
-
-    GstPipeline* pipeline;
-
     std::string uuid;
+
+    GstBus* bus;
+
     std::unique_ptr<PipeTree> sourceElements;
 };

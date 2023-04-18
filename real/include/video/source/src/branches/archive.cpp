@@ -41,12 +41,15 @@ GstPad* ArchiveBranch::getSinkPad(DataLine::LineType type) {
         case DataLine::LineType::Audio:
         g_print("StreamBranch: Getting new audio pad\n");
         newPad = gst_element_request_pad_simple(muxer, "audio_%u");
+        break;
 
         case DataLine::LineType::Video:
         g_print("StreamBranch: Getting new video pad\n");
         newPad = gst_element_request_pad_simple(muxer, "video_%u");
+        break;
 
         default:
+        g_print("StreamBranch: Getting new unknown pad\n");
         return nullptr;
     }
 

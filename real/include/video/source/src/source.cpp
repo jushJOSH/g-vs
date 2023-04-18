@@ -14,6 +14,8 @@ Source::Source(const std::string &source)
 {   
     sourceElements = std::make_unique<PipeTree>(source);
     this->source = source;
+    this->bus = this->sourceElements->getBus();
+    gst_bus_add_signal_watch(this->bus);
 }
 
 Source::Source(const std::string &source, SourceConfigDto& config)
@@ -38,15 +40,9 @@ std::string Source::getUUID() const {
     return uuid;
 }
 
+// TODO remove funny
 std::shared_ptr<StreamBranch> Source::runStream() {
-    auto streamBranch = std::make_shared<StreamBranch>();
-    sourceElements->addBranch(streamBranch);
-
-    return streamBranch;
-}
-
-std::shared_ptr<StreamBranch> Source::runStream(std::condition_variable* untilBranchReady, std::mutex *commonBranchMutex) {
-    auto streamBranch = std::make_shared<StreamBranch>(untilBranchReady, commonBranchMutex);
+    auto streamBranch = std::make_shared<StreamBranch>("/home/egor/hls_test");
     sourceElements->addBranch(streamBranch);
 
     return streamBranch;

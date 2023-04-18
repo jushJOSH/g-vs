@@ -53,17 +53,6 @@ GstPadProbeReturn PipeTree::branchUnlinkProbe(GstPad* pad, GstPadProbeInfo *info
     return GST_PAD_PROBE_OK;
 }
 
-void PipeTree::onError(GstBus *bus, GstMessage *msg, gpointer data) {
-    GError *err;
-    gchar *debug_info;
-
-    gst_message_parse_error (msg, &err, &debug_info);
-    g_printerr ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
-    g_printerr ("Debugging information: %s\n", debug_info ? debug_info : "none");
-    g_clear_error (&err);
-    g_free (debug_info);
-}
-
 int PipeTree::manageBranchQueue(PadInfo& data) {
     g_print("PipeTree: Started queue management\n");
 
@@ -123,12 +112,6 @@ PipeTree::PipeTree()
     
     // Setting bin for padinfo data
     padinfo.bin = GST_BIN(pipeline);
-
-    // Creating error callback from pipeline bus
-    auto bus = gst_element_get_bus (pipeline);
-    gst_bus_add_signal_watch (bus);
-    g_signal_connect (G_OBJECT (bus), "message::error", G_CALLBACK(onError), nullptr);
-    gst_object_unref (bus);
 }
 
 PipeTree::PipeTree(const std::string& source)
@@ -159,6 +142,10 @@ void PipeTree::addBranch(std::shared_ptr<PipeBranch> branch) {
         manageBranchQueue(padinfo);
 }
 
+GstBus* PipeTree::getBus() const {
+    return gst_element_get_bus(pipeline);
+}
+
 void PipeTree::removeBranch(const std::string& name) {
     if (!padinfo.branches.contains(name)) return;
     
@@ -180,6 +167,7 @@ void PipeTree::setSource(const std::string &source) {
     this->source = gst_element_factory_make("uridecodebin", str(format("%1%_uridecodebin") % uuid).c_str());
     gst_bin_add(GST_BIN(pipeline), this->source);
     g_object_set(this->source, "uri", source.c_str(), NULL);
+    g_object_set(this->source, "is-live", true, NULL);
     
     g_signal_connect(this->source, "pad-added", G_CALLBACK(onNewPad), &padinfo);
     g_signal_connect(this->source, "no-more-pads", G_CALLBACK(onNoMorePads), &padinfo);

@@ -17,7 +17,7 @@ AudioLine::AudioLine(
     audioconverter(gst_element_factory_make("audioconvert", str(format("%1%_audioconvert") % uuid).c_str())),
     volume(gst_element_factory_make("volume", str(format("%1%_volume") % uuid).c_str()))
 {
-    this->encoder = gst_element_factory_make("vorbisenc", str(format("%1%_vorbisenc") % uuid).c_str());
+    this->encoder = gst_element_factory_make("opusenc", str(format("%1%_opusenc") % uuid).c_str());
     g_print("Created audioline %s\n", uuid.c_str());
 
     gst_bin_add_many(this->bin, 

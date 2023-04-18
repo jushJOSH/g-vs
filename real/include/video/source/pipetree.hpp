@@ -58,6 +58,7 @@ public:
 
     GstElement* getSink(const std::string &name);
     bool noMoreBranches() const;
+    GstBus* getBus() const;
 
     void setOnBranchDeleted(const std::function<void(void*)> callback, void* data);
 
@@ -65,7 +66,6 @@ private:
     static GstPadProbeReturn branchUnlinkProbe(GstPad* pad, GstPadProbeInfo *info, gpointer user_data);
     static GstPadProbeReturn branchEosProbe(GstPad* pad, GstPadProbeInfo *info, gpointer user_data);
     static void onNewPad(GstElement *src, GstPad *newPad, PadInfo* data);
-    static void onError(GstBus *bus, GstMessage *msg, gpointer data);
     static int manageBranchQueue(PadInfo& data);
     static void onNoMorePads(GstElement* src, PadInfo* data);
     static std::shared_ptr<DataLine> createDataline(const std::pair<std::string, GstPad*> &pad, const PadInfo &userData);
