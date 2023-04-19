@@ -5,13 +5,14 @@
 #include <oatpp/core/macro/codegen.hpp>
 #include <oatpp/core/macro/component.hpp>
 
-#include <condition_variable>
-#include <mutex>
+#include <memory>
+#include <unordered_map>
 
-#include <api/hls/hls.hpp>
 #include <types.hpp>
 
-#include OATPP_CODEGEN_BEGIN(ApiController) //<- Begin Codegen
+class LiveHandler;
+
+#include OATPP_CODEGEN_BEGIN(ApiController)
 
 class VsapiController : public oatpp::web::server::api::ApiController {
 // Default constructor
@@ -26,10 +27,21 @@ public:
         return std::make_shared<VsapiController>(objectMapper);
     }
 
+private:
+    VSTypes::OatResponse getStaticFileResponse(std::shared_ptr<LiveHandler> handler, const oatpp::String& filepath, const oatpp::String& rangeHeader) const;
+    VSTypes::OatResponse getFullFileResponse(const oatpp::String& file) const;
+    VSTypes::OatResponse getRangeResponse(const oatpp::String& rangeStr, const oatpp::String& file) const;
+
 // Endpoints
 public:
-    ENDPOINT("GET", "/live", getLive);
-    ENDPOINT("GET", "/static")
+    ENDPOINT("GET", "/vsapi/live", getLive, QUERY(oatpp::String, source, "source"));
+    ENDPOINT("GET", "/vsapi/static/{uuid}/*",  getStatic,
+             REQUEST(std::shared_ptr<IncomingRequest>, request),
+             PATH(oatpp::String, uuid));
+
+private:
+    // Map of SOURCE(URI) -> LiveHandler
+    std::unordered_map<std::string, std::shared_ptr<LiveHandler>> liveStreams;
 };
 
 #include OATPP_CODEGEN_END(ApiController) 

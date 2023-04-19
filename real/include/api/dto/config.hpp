@@ -13,6 +13,7 @@ class ConfigDto : public oatpp::DTO {
     DTO_FIELD(String, swaggerHost);
     DTO_FIELD(String, dbConnectionString);
     DTO_FIELD(String, secretPath) = "/home/egor/g-vs/real/secret.pem";
+    DTO_FIELD(String, hlsPath);
     DTO_FIELD(String, issuer) = "vs:jwt-issuer";
     DTO_FIELD(String, hardware_acceleration) = "cpu";
 };

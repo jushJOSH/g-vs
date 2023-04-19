@@ -167,7 +167,6 @@ void PipeTree::setSource(const std::string &source) {
     this->source = gst_element_factory_make("uridecodebin", str(format("%1%_uridecodebin") % uuid).c_str());
     gst_bin_add(GST_BIN(pipeline), this->source);
     g_object_set(this->source, "uri", source.c_str(), NULL);
-    g_object_set(this->source, "is-live", true, NULL);
     
     g_signal_connect(this->source, "pad-added", G_CALLBACK(onNewPad), &padinfo);
     g_signal_connect(this->source, "no-more-pads", G_CALLBACK(onNoMorePads), &padinfo);

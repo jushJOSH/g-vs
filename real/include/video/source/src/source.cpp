@@ -40,9 +40,8 @@ std::string Source::getUUID() const {
     return uuid;
 }
 
-// TODO remove funny
-std::shared_ptr<StreamBranch> Source::runStream() {
-    auto streamBranch = std::make_shared<StreamBranch>("/home/egor/hls_test");
+std::shared_ptr<StreamBranch> Source::runStream(const std::string &hlsFolder) {
+    auto streamBranch = std::make_shared<StreamBranch>(hlsFolder, this->uuid);
     sourceElements->addBranch(streamBranch);
 
     return streamBranch;

@@ -28,10 +28,10 @@ public:
     // [this] for passing class fields
     OATPP_CREATE_COMPONENT(oatpp::Object<ConfigDto>, config)([this] {
         if (!m_cmdArgs.hasArgument("--config") 
-        && (!m_cmdArgs.hasArgument("--host") || !(m_cmdArgs.hasArgument("port") || !m_cmdArgs.hasArgument("--pguri"))))
+            && !m_cmdArgs.hasArgument("--pguri"))
         {
             OATPP_LOGE("AppComponent", "Can't retrieve config.");
-            //throw std::runtime_error("[AppComponent]: Can't retreive config");
+            //throw std::runtime_error("Can't retreive config");
         }
 
         auto objectMapper = oatpp::parser::json::mapping::ObjectMapper::createShared();
@@ -48,6 +48,7 @@ public:
         std::string host = m_cmdArgs.getNamedArgumentValue("--host", "0.0.0.0");
         std::string port = m_cmdArgs.getNamedArgumentValue("--port", "8080");
 
+        // TODO remove hardcoded dblink
         //postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]
         std::string pgUri = m_cmdArgs.getNamedArgumentValue("--pguri", "postgresql://videoserver:31337@192.168.0.6/videoserver");
         if (!pgUri.empty()) {
@@ -56,11 +57,15 @@ public:
             config->host = oatpp::String(host.c_str(), host.size());
             config->port = std::stoi(port);
 
+            // TODO remove hardcoded hlsPath
+            config->hlsPath = "/home/egor/hls_test";
+
+            // TODO make save config prop
             return config;
         }
 
         OATPP_LOGE("AppComponent", "--pguri not specified.");
-        throw std::runtime_error("[AppComponent] --pguri not specified");
+        throw std::runtime_error("--pguri not specified");
     }()); 
 
     OATPP_CREATE_COMPONENT(std::shared_ptr<JWT>, jwt)([]{

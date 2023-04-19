@@ -8,7 +8,6 @@
 #include <unordered_map>
 #include <mutex>
 
-#include <video/sample/sample.hpp>
 #include <video/source/pipetree.hpp>
 
 #include <boost/uuid/uuid.hpp>
@@ -41,7 +40,7 @@ public:
 
     // Branch management
     // Stream
-    std::shared_ptr<StreamBranch> runStream();
+    std::shared_ptr<StreamBranch> runStream(const std::string &hlsFolder);
 
     // Archive
     std::shared_ptr<ArchiveBranch> runArchive(const std::string &path);
