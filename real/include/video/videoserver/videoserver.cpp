@@ -34,16 +34,23 @@ Videoserver::~Videoserver() {
 }
 
 std::shared_ptr<Source> Videoserver::openSource(const std::string& source) {
-    if (!aliveSources.contains(source)) {
-        g_print("Videoserver: created new source %s\n", source.c_str());
-        auto newSource = std::make_shared<Source>(source);
-        newSource->setRemoveBranchCallback(onBranchRemoved, new RemoveBranchData {
+    if (aliveSources.contains(source)) return aliveSources[source];
+
+    g_print("Videoserver: created new source %s\n", source.c_str());
+    auto newSource = std::make_shared<Source>(source);
+    newSource->setRemoveBranchCallback(onBranchRemoved, new RemoveBranchData {
+        newSource.get(),
+        &aliveSources
+    });
+    newSource->addBusCallback("eos", Source::BusCallbackData{
+        G_CALLBACK(onSourceStop),
+        new RemoveBranchData{
             newSource.get(),
             &aliveSources
-        });
-        newSource->setState();
-        aliveSources[source] = newSource;
-    }
+        }
+    });
+    newSource->setState();
+    aliveSources[source] = newSource;
         
     return aliveSources.at(source);
 }
@@ -63,4 +70,14 @@ void Videoserver::onBranchRemoved(void* data) {
         removeData->allSources->erase(removeData->targetSource->getSource());
         delete removeData;
     }
+}
+
+bool Videoserver::onSourceStop(GstBus *bus, GstMessage *message, gpointer data) {
+    auto removeData = (RemoveBranchData*)data;
+    g_print("Removed source %s because something happend to stream\n", removeData->targetSource->getUUID().c_str());
+    
+    removeData->allSources->erase(removeData->targetSource->getUUID());
+    delete removeData;
+
+    return false;
 }

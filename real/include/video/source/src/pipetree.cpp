@@ -189,3 +189,7 @@ void PipeTree::setOnBranchDeleted(const std::function<void(void*)> callback, voi
     this->cbdata.cb = callback;
     this->cbdata.data = data;
 }
+
+GstElement* PipeTree::getPipeline() const {
+    return pipeline;
+}

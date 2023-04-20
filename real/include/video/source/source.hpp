@@ -19,7 +19,7 @@ class PipeTree;
 class Source {
 public:
     struct BusCallbackData { 
-        std::function<void(void*)> callback;
+        GCallback callback;
         void* data;
     };
 
@@ -47,13 +47,12 @@ public:
     
     void removeBranch(const std::string& branchid);
 
-    void addBusCallback(const std::string &signal, BusCallbackData& data);
+    void addBusCallback(const std::string &message, BusCallbackData data);
 
 protected:
     std::string source;
     std::string uuid;
+    std::unique_ptr<PipeTree> sourceElements;
 
     GstBus* bus;
-
-    std::unique_ptr<PipeTree> sourceElements;
 };

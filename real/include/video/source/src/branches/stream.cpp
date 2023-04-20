@@ -15,8 +15,7 @@ using boost::str;
 
 StreamBranch::StreamBranch(const std::string &playlistFolder, const std::string &playlistId)
 :   PipeBranch(
-        "hlssink",
-        "mpegtsmux"
+        "hlssink2"
     )
 {
     g_print("Created stream branch %s\n", uuid.c_str());
@@ -32,7 +31,9 @@ StreamBranch::StreamBranch(const std::string &playlistFolder, const std::string 
     g_object_set(sink, "playlist-root", playlist_root.c_str(), NULL);
     g_object_set(sink, "playlist-location", playlist_loc.c_str(), NULL);
     g_object_set(sink, "location", segment_loc.c_str(), NULL);
-    
+    g_object_set(sink, "target-duration", 2, NULL);
+    g_object_set(sink, "playlist-length", 10, NULL);
+
     this->createdFolder = str(format("%s/%s") % playlistFolder % playlistId);
     bool folderCreated = std::filesystem::create_directories(this->createdFolder);
     if (!folderCreated)
@@ -40,8 +41,8 @@ StreamBranch::StreamBranch(const std::string &playlistFolder, const std::string 
 }
 
 bool StreamBranch::loadBin() {
-    gst_bin_add_many(bin, muxer, sink, NULL);
-    return gst_element_link(muxer, sink);
+    gst_bin_add_many(bin, sink, NULL);
+    return true;
 }
 
 void StreamBranch::unloadBin() {
@@ -50,19 +51,34 @@ void StreamBranch::unloadBin() {
 }
 
 GstPad* StreamBranch::getSinkPad(DataLine::LineType type) {
-    auto newPad = gst_element_request_pad_simple(muxer, "sink_%d");
+    GstPad* newPad = nullptr;
+    switch(type) {
+        case DataLine::LineType::Audio:
+        g_print("StreamBranch: Getting new audio pad\n");
+        newPad = gst_element_request_pad_simple(sink, "audio");
+        break;
 
-    auto padName = std::string(gst_pad_get_name(newPad));
-    auto ghostName = str(format("%1%_ghost") % padName);
+        case DataLine::LineType::Video:
+        g_print("StreamBranch: Getting new video pad\n");
+        newPad = gst_element_request_pad_simple(sink, "video");
+        break;
 
+        default:
+        g_print("StreamBranch: Getting new unknown pad\n");
+        return nullptr;
+    }
+
+    if (gst_pad_is_linked(newPad)) return nullptr;
+    auto padName = gst_pad_get_name(newPad);
+    auto ghostPadName = str(format("%1%_%2%_ghost") % uuid % padName).c_str();
     auto ghostPad = gst_ghost_pad_new(
-            ghostName.c_str(),
+            ghostPadName,
             newPad
     );
     gst_element_add_pad(GST_ELEMENT(bin), ghostPad);
     g_object_unref(newPad);
 
-    return ghostPad;
+    return gst_element_get_static_pad(GST_ELEMENT(bin), ghostPadName);
 }
 
 GstElement *StreamBranch::getFirstElement() const {

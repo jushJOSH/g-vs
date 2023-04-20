@@ -8,6 +8,8 @@
 #include <memory>
 #include <unordered_map>
 
+#include <gst/gst.h>
+
 #include <types.hpp>
 
 class LiveHandler;
@@ -27,10 +29,10 @@ public:
         return std::make_shared<VsapiController>(objectMapper);
     }
 
+    static bool onSourceStop(GstBus *bus, GstMessage *message, gpointer data);
+
 private:
     VSTypes::OatResponse getStaticFileResponse(std::shared_ptr<LiveHandler> handler, const oatpp::String& filepath, const oatpp::String& rangeHeader) const;
-    VSTypes::OatResponse getFullFileResponse(const oatpp::String& file) const;
-    VSTypes::OatResponse getRangeResponse(const oatpp::String& rangeStr, const oatpp::String& file) const;
 
 // Endpoints
 public:
@@ -40,8 +42,18 @@ public:
              PATH(oatpp::String, uuid));
 
 private:
+    struct HandlerRemoveBundle {
+        std::shared_ptr<LiveHandler> target;
+
+        std::unordered_map<std::string, std::shared_ptr<LiveHandler>> *liveStreams;
+        std::unordered_map<std::string, std::shared_ptr<LiveHandler>> *liveStreams_UUID;
+    };
+
     // Map of SOURCE(URI) -> LiveHandler
     std::unordered_map<std::string, std::shared_ptr<LiveHandler>> liveStreams;
+
+    // Map of SOURCE(UUID) -> LiveHandler
+    std::unordered_map<std::string, std::shared_ptr<LiveHandler>> liveStreams_UUID;
 };
 
 #include OATPP_CODEGEN_END(ApiController) 

@@ -1,7 +1,11 @@
 #include <video/source/source.hpp>
 #include <video/source/datalines/video.hpp>
 
-#include <atomic>
+#include <boost/format.hpp>
+#include <boost/algorithm/string.hpp>
+
+using boost::format;
+using boost::str;
 
 Source::Source() 
 :   uuid(boost::uuids::to_string(boost::uuids::random_generator_mt19937()()))
@@ -30,6 +34,7 @@ GstStateChangeReturn Source::setState(GstState state) {
 
 Source::~Source() {
     g_print("Deleted source %s\n", uuid.c_str());
+    g_object_unref(bus);
 }
 
 void Source::setConfig(SourceConfigDto& config) {
@@ -46,7 +51,6 @@ std::shared_ptr<StreamBranch> Source::runStream(const std::string &hlsFolder) {
 
     return streamBranch;
 }
-
 
 std::shared_ptr<ArchiveBranch> Source::runArchive(const std::string &path) {
     auto archiveBranch = std::make_shared<ArchiveBranch>(path);
@@ -69,4 +73,9 @@ std::string Source::getSource() const {
 
 void Source::setRemoveBranchCallback(const std::function<void(void*)> callback, void* data) {
     sourceElements->setOnBranchDeleted(callback, data);
+}
+
+void Source::addBusCallback(const std::string &message, BusCallbackData data) {
+    auto signal = str(format("message::%s") % message);
+    g_signal_connect(this->bus, signal.c_str(), G_CALLBACK(data.callback), data.data);
 }

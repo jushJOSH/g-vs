@@ -59,6 +59,7 @@ public:
     GstElement* getSink(const std::string &name);
     bool noMoreBranches() const;
     GstBus* getBus() const;
+    GstElement* getPipeline() const;
 
     void setOnBranchDeleted(const std::function<void(void*)> callback, void* data);
 

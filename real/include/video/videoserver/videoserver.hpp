@@ -50,6 +50,7 @@ static Accelerator accelerator;
 
 private:
     static void onBranchRemoved(void* data);
+    static bool onSourceStop(GstBus *bus, GstMessage *message, gpointer data);
 
 private:
 // --- GStreamer params ---
