@@ -47,7 +47,7 @@ public:
     
     void removeBranch(const std::string& branchid);
 
-    void addBusCallback(const std::string &message, BusCallbackData data);
+    gulong addBusCallback(const std::string &message, BusCallbackData data);
 
 protected:
     std::string source;

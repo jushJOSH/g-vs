@@ -15,18 +15,18 @@ using boost::str;
 
 LiveHandler::LiveHandler(const std::string &source)
 :   source(videoserver->openSource(source)),
-    source_uri(source)
+    source_uri(source),
+    streamBranch(this->source->runStream(config->hlsPath))
 {   
-    this->source->addBusCallback("element", Source::BusCallbackData{
+    this->hlsconfig = this->streamBranch->getConfig();
+    this->fileManager = std::make_shared<StaticFilesManager>(this->hlsconfig->playlist_folder);
+
+    bundle.issuer = this;
+    auto id = this->source->addBusCallback("element", Source::BusCallbackData{
         G_CALLBACK(onElementMessage),
         &bundle
     });
-    this->streamBranch = this->source->runStream(config->hlsPath);
-
-    auto currentSourceFolder = str(format("%s/%s") % config->hlsPath->c_str()
-                                                   % this->source->getUUID());
-
-    this->fileManager = std::make_shared<StaticFilesManager>(currentSourceFolder);
+    bundle.callback = id;
 }
 
 LiveHandler::~LiveHandler()
@@ -46,6 +46,7 @@ VSTypes::OatResponse LiveHandler::getSegment(const oatpp::String &requestedSegme
         std::make_shared<oatpp::data::stream::FileInputStream>(file.c_str())
     );
 
+    this->lastSegmentRequest = std::chrono::system_clock::now();
     return oatpp::web::protocol::http::outgoing::Response::createShared(VSTypes::OatStatus::CODE_200, body);
 }
 
@@ -90,11 +91,12 @@ bool LiveHandler::onElementMessage(GstBus *bus, GstMessage *message, gpointer da
     bundle->packetCount++;
     if (bundle->packetCount >= 3) {
         auto lock = std::lock_guard<std::mutex>(bundle->commonMutex);
+        bundle->issuer->lastSegmentRequest = std::chrono::system_clock::now();
         bundle->ready = true;
         bundle->cv.notify_all();
+        g_signal_handler_disconnect(bus, bundle->callback);
     }
 
-    // By returning false we disconnect handler from signal
     return false;
 }
 
@@ -104,4 +106,16 @@ std::shared_ptr<Source> LiveHandler::getSource() const {
 
 std::string LiveHandler::getSourceUri() const {
     return this->source_uri;
+}
+
+timestamp LiveHandler::getLastTimestamp() const {
+    return lastSegmentRequest;
+}
+
+int LiveHandler::getBias() const {
+    return hlsconfig->bias;
+}
+
+int LiveHandler::getSegmentDuration() const {
+    return hlsconfig->target_duration;
 }

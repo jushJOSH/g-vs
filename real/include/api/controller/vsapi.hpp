@@ -30,9 +30,7 @@ public:
     }
 
     static bool onSourceStop(GstBus *bus, GstMessage *message, gpointer data);
-
-private:
-    VSTypes::OatResponse getStaticFileResponse(std::shared_ptr<LiveHandler> handler, const oatpp::String& filepath, const oatpp::String& rangeHeader) const;
+    static bool timeoutCheckUsage(gpointer data);
 
 // Endpoints
 public:

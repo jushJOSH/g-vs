@@ -46,7 +46,8 @@ std::string Source::getUUID() const {
 }
 
 std::shared_ptr<StreamBranch> Source::runStream(const std::string &hlsFolder) {
-    auto streamBranch = std::make_shared<StreamBranch>(hlsFolder, this->uuid);
+    auto config = std::make_shared<HLSConfig>(hlsFolder, this->uuid, 4, 10);
+    auto streamBranch = std::make_shared<StreamBranch>(config);
     sourceElements->addBranch(streamBranch);
 
     return streamBranch;
@@ -75,7 +76,7 @@ void Source::setRemoveBranchCallback(const std::function<void(void*)> callback, 
     sourceElements->setOnBranchDeleted(callback, data);
 }
 
-void Source::addBusCallback(const std::string &message, BusCallbackData data) {
+gulong Source::addBusCallback(const std::string &message, BusCallbackData data) {
     auto signal = str(format("message::%s") % message);
-    g_signal_connect(this->bus, signal.c_str(), G_CALLBACK(data.callback), data.data);
+    return g_signal_connect(this->bus, signal.c_str(), G_CALLBACK(data.callback), data.data);
 }

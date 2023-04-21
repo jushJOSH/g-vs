@@ -13,32 +13,33 @@
 using boost::format;
 using boost::str;
 
-StreamBranch::StreamBranch(const std::string &playlistFolder, const std::string &playlistId)
+StreamBranch::StreamBranch(std::shared_ptr<HLSConfig> config)
 :   PipeBranch(
         "hlssink2"
-    )
+    ),
+    config(config)
 {
     g_print("Created stream branch %s\n", uuid.c_str());
     
     if (!loadBin())
         throw std::runtime_error("Could not link elements for some reason...");
     
-    //g_object_set(sink, "playlist-root", playlistRootFolder.c_str(), NULL);
-    auto playlist_root = str(format("static/%s") % playlistId);
-    auto segment_loc = str(format("%s/%s/segment\%\%05d.ts") % playlistFolder % playlistId);
-    auto playlist_loc = str(format("%s/%s/playlist.m3u8") % playlistFolder % playlistId);
+    g_object_set(sink, "playlist-root", config->playlist_root.c_str(), NULL);
+    g_object_set(sink, "playlist-location", config->playlist_loc.c_str(), NULL);
+    g_object_set(sink, "location", config->segment_loc.c_str(), NULL);
+    g_object_set(sink, "target-duration", config->target_duration, NULL);
+    g_object_set(sink, "playlist-length", config->playlist_length, NULL);
 
-    g_object_set(sink, "playlist-root", playlist_root.c_str(), NULL);
-    g_object_set(sink, "playlist-location", playlist_loc.c_str(), NULL);
-    g_object_set(sink, "location", segment_loc.c_str(), NULL);
-    g_object_set(sink, "target-duration", 2, NULL);
-    g_object_set(sink, "playlist-length", 10, NULL);
-
-    this->createdFolder = str(format("%s/%s") % playlistFolder % playlistId);
-    bool folderCreated = std::filesystem::create_directories(this->createdFolder);
+    bool folderCreated = std::filesystem::create_directories(config->playlist_folder);
     if (!folderCreated)
-        throw std::runtime_error(str(format("%s folder cannot be created!") % this->createdFolder));
+        throw std::runtime_error(str(format("%s folder cannot be created!") % config->playlist_folder));
 }
+
+StreamBranch::StreamBranch(const std::string &playlistFolder, const std::string &playlistId, int targetDuration, int playlistLenght, int bias)
+:   StreamBranch(std::make_shared<HLSConfig>(
+        playlistFolder, playlistId, targetDuration, playlistLenght, bias 
+    ))
+{}
 
 bool StreamBranch::loadBin() {
     gst_bin_add_many(bin, sink, NULL);
@@ -90,5 +91,9 @@ StreamBranch::~StreamBranch() {
 
     unloadBin();
 
-    std::filesystem::remove_all(createdFolder);
+    std::filesystem::remove_all(config->playlist_folder);
+}
+
+std::shared_ptr<HLSConfig> StreamBranch::getConfig() const {
+    return this->config;
 }

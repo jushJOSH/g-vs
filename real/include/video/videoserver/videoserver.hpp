@@ -41,6 +41,7 @@ std::shared_ptr<Source> openSource(const std::string& source);
 
 // Removes branch from source
 void removeBranchFromSource(const std::string &source, const std::string &branch);
+void removeSource(const std::string &source);
 
 /// @brief Allows to get current GST main loop
 /// @return  GMainLoop* GST Main loop
@@ -55,6 +56,8 @@ private:
 private:
 // --- GStreamer params ---
 GMainLoop *mainLoop;
+
+// Map of SOURCE(URI) -> Source obj
 std::unordered_map<std::string, std::shared_ptr<Source>> aliveSources;
 std::thread loopThread;
 };

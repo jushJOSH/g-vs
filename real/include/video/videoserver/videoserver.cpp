@@ -62,6 +62,11 @@ void Videoserver::removeBranchFromSource(const std::string &source, const std::s
     targetSrc->removeBranch(branch);
 }
 
+void Videoserver::removeSource(const std::string &source) {
+    if (aliveSources.contains(source))
+        aliveSources.erase(source);
+}
+
 void Videoserver::onBranchRemoved(void* data) {
     RemoveBranchData* removeData = (RemoveBranchData*)data;
     g_print("onBranchRemoved callback fired!\n");

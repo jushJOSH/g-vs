@@ -1,5 +1,7 @@
 #include <api/controller/vsapi.hpp>
+
 #include <video/live/live.hpp>
+#include <video/videoserver/videoserver.hpp>
 
 #include <chrono>
 
@@ -22,8 +24,9 @@ VSTypes::OatResponse VsapiController::getLive(const oatpp::String &source) {
             G_CALLBACK(onSourceStop),
             removebundle
         });
+        g_timeout_add_seconds(10, G_SOURCE_FUNC(timeoutCheckUsage), removebundle);
         liveStreams[source] = newHandler;
-        liveStreams_UUID[newHandler->getUUID()] = newHandler;
+        liveStreams_UUID[newHandler->getUUID()] = newHandler;   
     }
     
     auto lock = std::unique_lock<std::mutex>(liveStreams[source]->getMutex());
@@ -61,15 +64,7 @@ VSTypes::OatResponse VsapiController::getStatic(const VSTypes::OatRequest &reque
         }
     );
 
-    return getStaticFileResponse(handler, filepath, range);
-}
-
-VSTypes::OatResponse VsapiController::getStaticFileResponse(std::shared_ptr<LiveHandler> handler,
-                                                            const oatpp::String& filepath,
-                                                            const oatpp::String& rangeHeader) const
-{
-    auto file = handler->getSegment(filepath);
-    return file;
+    return handler->getSegment(filepath);
 }
 
 bool VsapiController::onSourceStop(GstBus *bus, GstMessage *message, gpointer data) {
@@ -79,8 +74,34 @@ bool VsapiController::onSourceStop(GstBus *bus, GstMessage *message, gpointer da
 
     if (handlerToDelete->liveStreams->contains(sourceUri)) return false;
 
+    OATPP_COMPONENT(std::shared_ptr<Videoserver>, videoserver);
     handlerToDelete->liveStreams->erase(sourceUri);
     handlerToDelete->liveStreams_UUID->erase(handlerToDelete->target->getUUID());
+    videoserver->removeSource(sourceUri);
+
     OATPP_LOGD("VsapiController", "Gotcha");
     return false;
+}
+
+bool VsapiController::timeoutCheckUsage(gpointer data) {
+    OATPP_LOGD("VsapiController", "About to check if timeout");
+    auto removeBundle = (HandlerRemoveBundle*)data;
+
+    auto currentTime = std::chrono::system_clock::now();
+    auto previousTime = removeBundle->target->getLastTimestamp();
+    int bias = removeBundle->target->getBias();
+    int segmentLenght = removeBundle->target->getSegmentDuration();
+    
+    OATPP_LOGD("VsapiController", "Lets see:\nPrev: %ld\nCurr: %ld", 
+                (previousTime + std::chrono::seconds(segmentLenght) + std::chrono::seconds(bias)).time_since_epoch().count(),
+                currentTime.time_since_epoch().count());
+    if ((previousTime + std::chrono::seconds(segmentLenght) + std::chrono::seconds(bias)) < currentTime
+        && removeBundle->target->isReady())
+    {
+        OATPP_LOGD("VsapiController", "Really timed out. Remove this funny");
+        onSourceStop(NULL, NULL, data);
+        return false;
+    }
+
+    return true;
 }
