@@ -70,7 +70,6 @@ GstPadLinkReturn DataLine::attachToPipeline(GstPad* srcpad) {
 void DataLine::detachFromPipeline() {
     auto myPad = gst_element_get_static_pad(GST_ELEMENT(bin), "sink");
     gst_pad_unlink(previousPad, myPad);
-    gst_element_send_event(encoder, gst_event_new_eos());
 }
 
 GstElement* DataLine::getEncoder() const {

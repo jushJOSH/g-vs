@@ -16,17 +16,17 @@ VSTypes::OatResponse VsapiController::getLive(const oatpp::String &source) {
             &liveStreams,
             &liveStreams_UUID
         };
-        newHandler->getSource()->addBusCallback("eos", Source::BusCallbackData{
-            G_CALLBACK(onSourceStop),
-            removebundle
-        });
-        newHandler->getSource()->addBusCallback("error", Source::BusCallbackData{
-            G_CALLBACK(onSourceStop),
-            removebundle
-        });
+        // newHandler->getSource()->addBusCallback("eos", Source::BusCallbackData{
+        //     G_CALLBACK(onSourceStop),
+        //     removebundle
+        // });
+        // newHandler->getSource()->addBusCallback("error", Source::BusCallbackData{
+        //     G_CALLBACK(onSourceStop),
+        //     removebundle
+        // });
         g_timeout_add_seconds(10, G_SOURCE_FUNC(timeoutCheckUsage), removebundle);
         liveStreams[source] = newHandler;
-        liveStreams_UUID[newHandler->getUUID()] = newHandler;   
+        liveStreams_UUID[newHandler->getSourceUUID()] = newHandler;   
     }
     
     auto lock = std::unique_lock<std::mutex>(liveStreams[source]->getMutex());
@@ -70,14 +70,14 @@ VSTypes::OatResponse VsapiController::getStatic(const VSTypes::OatRequest &reque
 bool VsapiController::onSourceStop(GstBus *bus, GstMessage *message, gpointer data) {
     auto handlerToDelete = (HandlerRemoveBundle*)data;
     std::string sourceUri = handlerToDelete->target->getSourceUri();
-    OATPP_LOGD("VsapiController", "Source %s end stopped for some reason", sourceUri);
+    OATPP_LOGD("VsapiController", "Source %s end stopped for some reason", sourceUri.c_str());
 
-    if (handlerToDelete->liveStreams->contains(sourceUri)) return false;
+    if (!handlerToDelete->liveStreams->contains(sourceUri)) return false;
 
     OATPP_COMPONENT(std::shared_ptr<Videoserver>, videoserver);
+    videoserver->removeBranchFromSource(sourceUri, handlerToDelete->target->getBranchUUID());
     handlerToDelete->liveStreams->erase(sourceUri);
-    handlerToDelete->liveStreams_UUID->erase(handlerToDelete->target->getUUID());
-    videoserver->removeSource(sourceUri);
+    handlerToDelete->liveStreams_UUID->erase(handlerToDelete->target->getSourceUUID());
 
     OATPP_LOGD("VsapiController", "Gotcha");
     return false;

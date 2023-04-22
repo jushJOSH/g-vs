@@ -88,10 +88,9 @@ GstElement *StreamBranch::getFirstElement() const {
 
 StreamBranch::~StreamBranch() {
     g_print("StreamBranch: destroyed one\n");
+    std::filesystem::remove_all(config->playlist_folder);
 
     unloadBin();
-
-    std::filesystem::remove_all(config->playlist_folder);
 }
 
 std::shared_ptr<HLSConfig> StreamBranch::getConfig() const {

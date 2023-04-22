@@ -1,3 +1,4 @@
+
 #include <video/source/pipetree.hpp>
 
 #include <video/source/datalines/audio.hpp>
@@ -12,6 +13,7 @@ using boost::format;
 using boost::str;
 
 GstPadProbeReturn PipeTree::branchEosProbe(GstPad* pad, GstPadProbeInfo *info, gpointer user_data) {
+    g_print("Received %s event\n", gst_event_type_get_name(GST_EVENT_TYPE (GST_PAD_PROBE_INFO_DATA (info))));
     if (GST_EVENT_TYPE (GST_PAD_PROBE_INFO_DATA (info)) != GST_EVENT_EOS)
         return GST_PAD_PROBE_OK;
     gst_pad_remove_probe(pad, GST_PAD_PROBE_INFO_ID(info));
@@ -49,6 +51,7 @@ GstPadProbeReturn PipeTree::branchUnlinkProbe(GstPad* pad, GstPadProbeInfo *info
         branchEosProbe, user_data, NULL);
     gst_object_unref (src);
     filter->detachFromPipeline();
+    gst_element_send_event(filter->getEncoder(), gst_event_new_eos());
 
     return GST_PAD_PROBE_OK;
 }

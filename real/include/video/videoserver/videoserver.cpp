@@ -49,13 +49,21 @@ std::shared_ptr<Source> Videoserver::openSource(const std::string& source) {
             &aliveSources
         }
     });
+    newSource->addBusCallback("error", Source::BusCallbackData{
+        G_CALLBACK(onSourceStop),
+        new RemoveBranchData{
+            newSource.get(),
+            &aliveSources
+        }
+    });
     newSource->setState();
     aliveSources[source] = newSource;
         
-    return aliveSources.at(source);
+    return newSource;
 }
 
 void Videoserver::removeBranchFromSource(const std::string &source, const std::string &branch) {
+    g_print("Videoserver: branch remove call\n");
     if (!aliveSources.contains(source)) return;
 
     auto targetSrc = aliveSources.at(source);
@@ -63,8 +71,10 @@ void Videoserver::removeBranchFromSource(const std::string &source, const std::s
 }
 
 void Videoserver::removeSource(const std::string &source) {
-    if (aliveSources.contains(source))
+    if (aliveSources.contains(source)) {
+        auto obj = aliveSources.at(source);
         aliveSources.erase(source);
+    }
 }
 
 void Videoserver::onBranchRemoved(void* data) {

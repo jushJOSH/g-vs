@@ -14,15 +14,19 @@ using boost::format;
 using boost::str;
 
 LiveHandler::LiveHandler(const std::string &source)
-:   source(videoserver->openSource(source)),
-    source_uri(source),
-    streamBranch(this->source->runStream(config->hlsPath))
+:   source_uri(source)
 {   
-    this->hlsconfig = this->streamBranch->getConfig();
+    auto o_source = videoserver->openSource(source);
+    auto o_branch = o_source->runStream(config->hlsPath);
+
+    this->source_uuid = o_source->getUUID();
+    this->branch_uuid = o_branch->getUUID();
+
+    this->hlsconfig = o_branch->getConfig();
     this->fileManager = std::make_shared<StaticFilesManager>(this->hlsconfig->playlist_folder);
 
     bundle.issuer = this;
-    auto id = this->source->addBusCallback("element", Source::BusCallbackData{
+    auto id = o_source->addBusCallback("element", Source::BusCallbackData{
         G_CALLBACK(onElementMessage),
         &bundle
     });
@@ -31,8 +35,8 @@ LiveHandler::LiveHandler(const std::string &source)
 
 LiveHandler::~LiveHandler()
 {
-    OATPP_LOGD("LiveHandler", "Deleted %s", source->getUUID());
-    videoserver->removeBranchFromSource(source->getUUID(), streamBranch->getUUID());
+    OATPP_LOGD("LiveHandler", "Deleted %s", source_uuid);
+    videoserver->removeBranchFromSource(source_uuid, branch_uuid);
 }
 
 oatpp::String LiveHandler::getPlaylist() {
@@ -48,10 +52,6 @@ VSTypes::OatResponse LiveHandler::getSegment(const oatpp::String &requestedSegme
 
     this->lastSegmentRequest = std::chrono::system_clock::now();
     return oatpp::web::protocol::http::outgoing::Response::createShared(VSTypes::OatStatus::CODE_200, body);
-}
-
-std::string LiveHandler::getUUID() const {
-    return source->getUUID();
 }
 
 oatpp::String LiveHandler::guessMime(const oatpp::String &filename) const {
@@ -78,18 +78,17 @@ bool LiveHandler::onElementMessage(GstBus *bus, GstMessage *message, gpointer da
         OATPP_LOGD("LiveHandler", "Received message has no structure in it");
         return true;
     }
-    g_print("%s\n", gst_structure_to_string(messageStruct));
 
     if (!gst_structure_has_name(messageStruct, "splitmuxsink-fragment-closed")) {
         OATPP_LOGD("LiveHandler", "Received message is not fragment closed or whatever");
         return true;
     }
-    OATPP_LOGD("LiveHandler", "Created HLS segment. Now we think what stream is ready to watch!");
     
     // If already created 3 segments. Up to 3 segments is stable ???
     // TODO fix unstable first segment
     bundle->packetCount++;
     if (bundle->packetCount >= 3) {
+        OATPP_LOGD("LiveHandler", "Now we think what stream is ready to watch!");
         auto lock = std::lock_guard<std::mutex>(bundle->commonMutex);
         bundle->issuer->lastSegmentRequest = std::chrono::system_clock::now();
         bundle->ready = true;
@@ -100,12 +99,16 @@ bool LiveHandler::onElementMessage(GstBus *bus, GstMessage *message, gpointer da
     return false;
 }
 
-std::shared_ptr<Source> LiveHandler::getSource() const {
-    return this->source;
+std::string LiveHandler::getSourceUUID() const {
+    return this->source_uuid;
 }
 
 std::string LiveHandler::getSourceUri() const {
     return this->source_uri;
+}
+
+std::string LiveHandler::getBranchUUID() const {
+    return this->branch_uuid;
 }
 
 timestamp LiveHandler::getLastTimestamp() const {

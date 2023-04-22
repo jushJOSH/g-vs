@@ -34,7 +34,6 @@ public:
 
     oatpp::String getPlaylist();
     VSTypes::OatResponse getSegment(const oatpp::String &requestedSegment);
-    std::string getUUID() const;
 
     bool isReady() const;
     std::mutex &getMutex();
@@ -43,8 +42,9 @@ public:
     int getBias() const;
     int getSegmentDuration() const;
 
-    std::shared_ptr<Source> getSource() const;
+    std::string getSourceUUID() const;
     std::string getSourceUri() const;
+    std::string getBranchUUID() const;
 
     oatpp::String guessMime(const oatpp::String &filename) const;
 
@@ -59,8 +59,8 @@ private:
     std::shared_ptr<HLSConfig> hlsconfig;
 
     std::string source_uri;
-    std::shared_ptr<Source> source;
-    std::shared_ptr<StreamBranch> streamBranch;
+    std::string source_uuid;
+    std::string branch_uuid;
     std::shared_ptr<StaticFilesManager> fileManager;
     
     timestamp lastSegmentRequest;

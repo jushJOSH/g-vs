@@ -5,7 +5,7 @@
 #include <boost/algorithm/string.hpp>
 
 struct HLSConfig {
-    HLSConfig(const std::string &playlistFolder, const std::string &playlistId, int targetDuration, int playlistLenght, int bias = 2)
+    HLSConfig(const std::string &playlistFolder, const std::string &playlistId, int targetDuration, int playlistLenght, int bias = 6)
     : target_duration(targetDuration), playlist_length(playlistLenght), bias(bias)
     {
         using boost::str;
