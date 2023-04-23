@@ -12,6 +12,12 @@ namespace VSMisc {
         if (receivedData->empty()) return -1; 
         else return receivedData[0]->id;
     }
+
+    enum class Protocol {
+        FILE,
+        OTHER,
+        NONE
+    };
 };
 
     //     #include <iostream>

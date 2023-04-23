@@ -7,6 +7,8 @@
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include <oatpp/core/base/Environment.hpp>
+
 using boost::format;
 using boost::str;
 
@@ -17,7 +19,7 @@ DataLine::DataLine(LineType type, const std::string &encoder)
     type(type),
     bin(GST_BIN(gst_bin_new(str(format("%1%_bin") % uuid).c_str())))
 {
-    g_print("Created dataline %s\n", uuid.c_str());
+    OATPP_LOGD("DataLine", "Created dataline %s", uuid.c_str());
     gst_bin_add(this->bin, 
                 this->queue);
 

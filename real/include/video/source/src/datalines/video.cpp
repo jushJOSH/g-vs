@@ -7,6 +7,8 @@
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include <oatpp/core/base/Environment.hpp>
+
 using boost::format;
 using boost::str;
 
@@ -22,7 +24,7 @@ VideoLine::VideoLine(
     videorate(gst_element_factory_make("videorate", str(format("%1%_videorate") % uuid).c_str()))
 {
     this->encoder = createEncoder();
-    g_print("Created videoline %s\n", uuid.c_str());
+    OATPP_LOGD("VideoLine", "Created videoline %s", uuid.c_str());
 
     gst_bin_add_many(this->bin, 
                      this->videoconverter, 
@@ -51,7 +53,7 @@ GstElement* VideoLine::createEncoder() {
         break;
     }
 
-    g_print("Desired encoder: %s\n", str(format("%1%%2%enc") % platform % encoder_s).c_str());
+    OATPP_LOGI("VideoLine", "Desired encoder: %s", str(format("%1%%2%enc") % platform % encoder_s).c_str());
     
     return gst_element_factory_make(
         str(format("%1%%2%enc") % platform % encoder_s).c_str(),
@@ -79,7 +81,7 @@ void VideoLine::generateSrcPad() const {
 }
 
 VideoLine::~VideoLine() {
-    g_print("Videoline: destroyed one\n");
+    OATPP_LOGD("VideoLine", "destroyed one");
     gst_element_send_event(GST_ELEMENT(this->bin), gst_event_new_eos());
     gst_element_set_state(GST_ELEMENT(bin), GST_STATE_NULL);
     gst_bin_remove_many(this->bin, 

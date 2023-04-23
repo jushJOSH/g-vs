@@ -5,6 +5,8 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/format.hpp>
 
+#include <oatpp/core/base/Environment.hpp>
+
 using boost::format;
 using boost::str;
 
@@ -17,8 +19,8 @@ AudioLine::AudioLine(
     audioconverter(gst_element_factory_make("audioconvert", str(format("%1%_audioconvert") % uuid).c_str())),
     volume(gst_element_factory_make("volume", str(format("%1%_volume") % uuid).c_str()))
 {
-    this->encoder = gst_element_factory_make("opusenc", str(format("%1%_opusenc") % uuid).c_str());
-    g_print("Created audioline %s\n", uuid.c_str());
+    this->encoder = gst_element_factory_make("avenc_aac", str(format("%1%_avenc_aac") % uuid).c_str());
+    OATPP_LOGD("AudioLine", "Created audioline %s", uuid.c_str());
 
     gst_bin_add_many(this->bin, 
                      this->audioconverter, 
@@ -52,6 +54,8 @@ void AudioLine::generateSrcPad() const {
 }
 
 AudioLine::~AudioLine() {
+    OATPP_LOGD("AudioLine", "Destroyed one");
+
     gst_element_send_event(GST_ELEMENT(this->bin), gst_event_new_eos());
     gst_element_set_state(GST_ELEMENT(bin), GST_STATE_NULL);
     gst_bin_remove_many(this->bin,

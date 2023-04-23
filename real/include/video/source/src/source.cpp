@@ -1,6 +1,8 @@
 #include <video/source/source.hpp>
 #include <video/source/datalines/video.hpp>
 
+#include <oatpp/core/base/Environment.hpp>
+
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 
@@ -10,7 +12,7 @@ using boost::str;
 Source::Source() 
 :   uuid(boost::uuids::to_string(boost::uuids::random_generator_mt19937()()))
 {   
-    g_print("Created source %s\n", uuid.c_str());
+    OATPP_LOGD("Source", "Created source %s", uuid.c_str());
 }
 
 Source::Source(const std::string &source)
@@ -33,7 +35,7 @@ GstStateChangeReturn Source::setState(GstState state) {
 }
 
 Source::~Source() {
-    g_print("Deleted source %s\n", uuid.c_str());
+    OATPP_LOGD("Source", "Deleted source %s", uuid.c_str());
     g_object_unref(bus);
 }
 

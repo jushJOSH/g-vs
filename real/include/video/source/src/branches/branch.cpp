@@ -1,5 +1,4 @@
 #include <video/source/branches/branch.hpp>
-
 #include <video/source/datalines/audio.hpp>
 #include <video/source/datalines/video.hpp>
 
@@ -9,9 +8,11 @@
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include <oatpp/core/base/Environment.hpp>
+#include <video/source/pipetree.hpp>
+
 using boost::format;
 using boost::str;
-
 
 PipeBranch::PipeBranch(const std::string &sink, const std::string &muxer) 
 :   uuid(boost::uuids::to_string(boost::uuids::random_generator_mt19937()())),
@@ -19,7 +20,7 @@ PipeBranch::PipeBranch(const std::string &sink, const std::string &muxer)
     sink(gst_element_factory_make(sink.c_str(), str(format("%1%_%2%") % uuid % sink).c_str())),
     bin(GST_BIN(gst_bin_new(str(format("%1%_bin") % uuid).c_str())))
 {   
-    g_print("Branch created %s\n", uuid.c_str());
+    OATPP_LOGD("PipeBranch", "Branch created %s", uuid.c_str());
 }
 
 GstElement* PipeBranch::getLastElement() const {
@@ -41,7 +42,7 @@ std::string PipeBranch::getUUID() const {
 }
 
 std::shared_ptr<DataLine> PipeBranch::createFilter(const std::string &padType) {
-    g_print("PipeBranch: creating new filter\n");
+    OATPP_LOGI("PipeBranch", "creating new filter");
     
     std::shared_ptr<DataLine> newLine;
 
@@ -81,19 +82,19 @@ bool PipeBranch::attachToPipeline(const std::vector<std::pair<std::string, GstEl
     // First of all add branch to pipeline
     gst_bin_add(parentBin, GST_ELEMENT(this->bin));
     if (!sync())
-        g_print("PipeBranch: sync failed!\n");
+        OATPP_LOGW("PipeBranch", "sync failed!");
     
     for (auto &pad : pads) {
-        g_print("PipeBranch: creating %s dataline\n", pad.first.c_str());
+        OATPP_LOGI("PipeBranch", "creating %s dataline", pad.first.c_str());
         
         auto dataline = createFilter(pad.first);
         gst_bin_add(parentBin, *dataline);
         if (!dataline->sync())
-            g_print("Filter %s: sync failed!\n", dataline->getUUID().c_str());
-
+            OATPP_LOGW("PipeBranch", "Filter %s sync failed!", dataline->getUUID().c_str());
+        
         auto filterLinkResult = addFilter(dataline);
         if (filterLinkResult != GstPadLinkReturn::GST_PAD_LINK_OK) {
-            g_print("PipeBranch: failed to link dataline and branch\n");
+            OATPP_LOGE("PipeBranch", "failed to link dataline and branch");
             gst_bin_remove(parentBin, *dataline);
             continue;
         }
@@ -102,11 +103,11 @@ bool PipeBranch::attachToPipeline(const std::vector<std::pair<std::string, GstEl
         auto branchLinkResult = dataline->attachToPipeline(teeSrcPad);
         if (branchLinkResult != GstPadLinkReturn::GST_PAD_LINK_OK)
         {
-            g_print("PipeBranch: failed to link dataline and uribindecode\n");
+            OATPP_LOGE("PipeBranch", "failed to link dataline and uribindecode");
             gst_bin_remove(parentBin, *dataline);
             continue;
         }
-        
+
         filters.push_back(dataline);
     }
     if (!filters.size())
@@ -119,7 +120,7 @@ bool PipeBranch::attachToPipeline(const std::vector<std::pair<std::string, GstEl
 }
 
 PipeBranch::~PipeBranch() {
-    g_print("PipeBranch: destroyed one\n");
+    OATPP_LOGD("PipeBranch", "destroyed one");
 }
 
 std::vector<std::shared_ptr<DataLine>> PipeBranch::getFilters() const {

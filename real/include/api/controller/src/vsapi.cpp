@@ -13,18 +13,21 @@ VSTypes::OatResponse VsapiController::getLive(const oatpp::String &source) {
         auto newHandler = std::make_shared<LiveHandler>(source);
         auto removebundle = new HandlerRemoveBundle{
             newHandler,
+            0, // No timer
             &liveStreams,
             &liveStreams_UUID
         };
-        // newHandler->getSource()->addBusCallback("eos", Source::BusCallbackData{
-        //     G_CALLBACK(onSourceStop),
-        //     removebundle
-        // });
-        // newHandler->getSource()->addBusCallback("error", Source::BusCallbackData{
-        //     G_CALLBACK(onSourceStop),
-        //     removebundle
-        // });
-        g_timeout_add_seconds(10, G_SOURCE_FUNC(timeoutCheckUsage), removebundle);
+
+        OATPP_COMPONENT(std::shared_ptr<Videoserver>, videoserver);
+        videoserver->openSource(source)->addBusCallback("eos", Source::BusCallbackData {
+            G_CALLBACK(onSourceStop),
+            removebundle
+        });
+        videoserver->openSource(source)->addBusCallback("error", Source::BusCallbackData{
+            G_CALLBACK(onSourceStop),
+            removebundle
+        });
+        removebundle->timer = g_timeout_add_seconds(10, G_SOURCE_FUNC(timeoutCheckUsage), removebundle);
         liveStreams[source] = newHandler;
         liveStreams_UUID[newHandler->getSourceUUID()] = newHandler;   
     }
@@ -70,7 +73,7 @@ VSTypes::OatResponse VsapiController::getStatic(const VSTypes::OatRequest &reque
 bool VsapiController::onSourceStop(GstBus *bus, GstMessage *message, gpointer data) {
     auto handlerToDelete = (HandlerRemoveBundle*)data;
     std::string sourceUri = handlerToDelete->target->getSourceUri();
-    OATPP_LOGD("VsapiController", "Source %s end stopped for some reason", sourceUri.c_str());
+    OATPP_LOGW("VsapiController", "Source %s stopped for some reason", sourceUri.c_str());
 
     if (!handlerToDelete->liveStreams->contains(sourceUri)) return false;
 
@@ -79,12 +82,16 @@ bool VsapiController::onSourceStop(GstBus *bus, GstMessage *message, gpointer da
     handlerToDelete->liveStreams->erase(sourceUri);
     handlerToDelete->liveStreams_UUID->erase(handlerToDelete->target->getSourceUUID());
 
+    // Stop timeout timer
+    if (handlerToDelete->timer != -1)
+        g_source_remove(handlerToDelete->timer);
+
     OATPP_LOGD("VsapiController", "Gotcha");
     return false;
 }
 
 bool VsapiController::timeoutCheckUsage(gpointer data) {
-    OATPP_LOGD("VsapiController", "About to check if timeout");
+    OATPP_LOGI("VsapiController", "About to check if timeout");
     auto removeBundle = (HandlerRemoveBundle*)data;
 
     auto currentTime = std::chrono::system_clock::now();
@@ -98,7 +105,7 @@ bool VsapiController::timeoutCheckUsage(gpointer data) {
     if ((previousTime + std::chrono::seconds(segmentLenght) + std::chrono::seconds(bias)) < currentTime
         && removeBundle->target->isReady())
     {
-        OATPP_LOGD("VsapiController", "Really timed out. Remove this funny");
+        OATPP_LOGI("VsapiController", "Really timed out. Remove this funny");
         onSourceStop(NULL, NULL, data);
         return false;
     }

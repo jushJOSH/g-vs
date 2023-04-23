@@ -28,6 +28,7 @@ private:
         std::vector<std::pair<std::string, GstElement*>> createdPads;
         std::vector<GstElement*> dynamicElements;
         bool noMorePads = false;
+        bool sync;
     };
 
     struct CallbackData {
@@ -71,9 +72,12 @@ private:
     static void onNoMorePads(GstElement* src, PadInfo* data);
     static std::shared_ptr<DataLine> createDataline(const std::pair<std::string, GstPad*> &pad, const PadInfo &userData);
 
+    static std::string getProtocol(const std::string &uri);
+
 private:
     // Map of 'name' of branch and branch itself
     std::string uuid;
+    std::string source_uri;
     PadInfo padinfo;
     CallbackData cbdata;
     

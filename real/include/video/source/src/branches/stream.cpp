@@ -19,7 +19,7 @@ StreamBranch::StreamBranch(std::shared_ptr<HLSConfig> config)
     ),
     config(config)
 {
-    g_print("Created stream branch %s\n", uuid.c_str());
+    OATPP_LOGD("StreamBranch", "Created stream branch %s", uuid.c_str());
     
     if (!loadBin())
         throw std::runtime_error("Could not link elements for some reason...");
@@ -48,24 +48,24 @@ bool StreamBranch::loadBin() {
 
 void StreamBranch::unloadBin() {
     gst_element_set_state(GST_ELEMENT(bin), GST_STATE_NULL);
-    gst_bin_remove_many(bin, muxer, sink, NULL);
+    gst_bin_remove_many(bin, sink, NULL);
 }
 
 GstPad* StreamBranch::getSinkPad(DataLine::LineType type) {
     GstPad* newPad = nullptr;
     switch(type) {
         case DataLine::LineType::Audio:
-        g_print("StreamBranch: Getting new audio pad\n");
+        OATPP_LOGI("StreamBranch", "Getting new audio pad");
         newPad = gst_element_request_pad_simple(sink, "audio");
         break;
 
         case DataLine::LineType::Video:
-        g_print("StreamBranch: Getting new video pad\n");
+        OATPP_LOGI("StreamBranch", "Getting new video pad");
         newPad = gst_element_request_pad_simple(sink, "video");
         break;
 
         default:
-        g_print("StreamBranch: Getting new unknown pad\n");
+        OATPP_LOGI("StreamBranch", "Getting new unknown pad");
         return nullptr;
     }
 
@@ -87,10 +87,10 @@ GstElement *StreamBranch::getFirstElement() const {
 }
 
 StreamBranch::~StreamBranch() {
-    g_print("StreamBranch: destroyed one\n");
+    OATPP_LOGD("StreamBranch", "destroyed one");
     std::filesystem::remove_all(config->playlist_folder);
 
-    unloadBin();
+    gst_element_set_state(GST_ELEMENT(bin), GST_STATE_NULL);
 }
 
 std::shared_ptr<HLSConfig> StreamBranch::getConfig() const {

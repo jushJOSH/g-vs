@@ -1,6 +1,4 @@
-
 #include <video/source/pipetree.hpp>
-
 #include <video/source/datalines/audio.hpp>
 #include <video/source/datalines/video.hpp>
 
@@ -9,24 +7,28 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/format.hpp>
 
+#include <oatpp/core/base/Environment.hpp>
+
 using boost::format;
 using boost::str;
 
 GstPadProbeReturn PipeTree::branchEosProbe(GstPad* pad, GstPadProbeInfo *info, gpointer user_data) {
-    g_print("Received %s event\n", gst_event_type_get_name(GST_EVENT_TYPE (GST_PAD_PROBE_INFO_DATA (info))));
+    OATPP_LOGD("PipeTree", "Received %s event", gst_event_type_get_name(GST_EVENT_TYPE (GST_PAD_PROBE_INFO_DATA (info))));
     if (GST_EVENT_TYPE (GST_PAD_PROBE_INFO_DATA (info)) != GST_EVENT_EOS)
-        return GST_PAD_PROBE_OK;
+        return GST_PAD_PROBE_PASS;
+
     gst_pad_remove_probe(pad, GST_PAD_PROBE_INFO_ID(info));
 
-    g_print("Entered eos probe call\n");
+    OATPP_LOGD("PipeTree", "Entered eos probe call");
     RemoveBranch *branchdata = (RemoveBranch*)user_data;
-    g_print("Target: %s\n", branchdata->branch->getUUID().c_str());
+    OATPP_LOGD("PipeTree", "Target: %s", branchdata->branch->getUUID().c_str());
 
     auto targetFilter = branchdata->branch->getFilters()[branchdata->currIdx];
+    targetFilter->detachFromPipeline();
     branchdata->branch->removeFilter(targetFilter->getUUID());
     
     if (!branchdata->branch->getFilters().size()) {
-        g_print("Remove branch itself\n");
+        OATPP_LOGD("PipeTree", "Remove branch itself");
         branchdata->branches->erase(branchdata->branch->getUUID());
         if (branchdata->cbdata != nullptr)
             branchdata->cbdata->cb(branchdata->cbdata->data);
@@ -39,9 +41,9 @@ GstPadProbeReturn PipeTree::branchEosProbe(GstPad* pad, GstPadProbeInfo *info, g
 
 GstPadProbeReturn PipeTree::branchUnlinkProbe(GstPad* pad, GstPadProbeInfo *info, gpointer user_data) {
     gst_pad_remove_probe(pad, GST_PAD_PROBE_INFO_ID(info));
-    g_print("Entered pad probe call\n");
+    OATPP_LOGD("PipeTree", "Entered pad probe call");
     RemoveBranch *branchdata = (RemoveBranch*)user_data;
-    g_print("Target: %s\n", branchdata->branch->getUUID().c_str());
+    OATPP_LOGD("PipeTree", "Target: %s", branchdata->branch->getUUID().c_str());
 
     // Setting up new probe for EOS event
     auto filter = branchdata->branch->getFilters()[branchdata->currIdx];
@@ -50,14 +52,13 @@ GstPadProbeReturn PipeTree::branchUnlinkProbe(GstPad* pad, GstPadProbeInfo *info
         (GstPadProbeType)(GST_PAD_PROBE_TYPE_BLOCK | GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM),
         branchEosProbe, user_data, NULL);
     gst_object_unref (src);
-    filter->detachFromPipeline();
     gst_element_send_event(filter->getEncoder(), gst_event_new_eos());
 
     return GST_PAD_PROBE_OK;
 }
 
 int PipeTree::manageBranchQueue(PadInfo& data) {
-    g_print("PipeTree: Started queue management\n");
+    OATPP_LOGI("PipeTree", "Started queue management");
 
     int successfulCount = 0;
     while (!data.branchQueue.empty()) {
@@ -80,7 +81,7 @@ void PipeTree::onNoMorePads(GstElement* src, PadInfo* data) {
 }
 
 void PipeTree::onNewPad(GstElement* element, GstPad* newPad, PadInfo* userData) {
-    g_print ("PipeBranch: Received new pad '%s'\n", GST_PAD_NAME (newPad));
+    OATPP_LOGD("PipeTree", "Received new pad '%s'", GST_PAD_NAME (newPad));
 
     auto UUID = boost::uuids::to_string(boost::uuids::random_generator_mt19937()());
     auto tee = gst_element_factory_make("tee", str(format("%1%_tee") % UUID).c_str());
@@ -91,7 +92,7 @@ void PipeTree::onNewPad(GstElement* element, GstPad* newPad, PadInfo* userData) 
     auto linkResult = gst_pad_link(newPad, teeSinkPad);
     
     userData->dynamicElements.push_back(tee);
-
+    
     // Check new pad type
     GstCaps *pad_caps = gst_pad_get_current_caps (newPad);
     GstStructure *pad_struct = gst_caps_get_structure (pad_caps, 0);
@@ -111,7 +112,7 @@ PipeTree::PipeTree()
 :   uuid(boost::uuids::to_string(boost::uuids::random_generator_mt19937()())),
     pipeline(gst_pipeline_new(uuid.c_str()))
 {
-    g_print("Created tree %s\n", uuid.c_str());
+    OATPP_LOGD("PipeTree", "Created tree %s", uuid.c_str());
     
     // Setting bin for padinfo data
     padinfo.bin = GST_BIN(pipeline);
@@ -124,13 +125,9 @@ PipeTree::PipeTree(const std::string& source)
 }
 
 PipeTree::~PipeTree() {
-    g_print("Deleted tree %s\n", uuid.c_str());
+    OATPP_LOGD("PipeTree", "Deleted tree %s", uuid.c_str());
 
     gst_element_set_state(pipeline, GST_STATE_NULL);
-    gst_bin_remove(GST_BIN(pipeline), source);
-    for (auto elem : padinfo.dynamicElements) 
-        gst_bin_remove(GST_BIN(pipeline), elem);
-
     gst_object_unref(pipeline);
 }
 
@@ -153,9 +150,9 @@ void PipeTree::removeBranch(const std::string& name) {
     if (!padinfo.branches.contains(name)) return;
     
     auto filters = padinfo.branches.at(name)->getFilters();
-    for (int i = 0; i < filters.size(); ++i) {
+    for (int i = filters.size() - 1; i >= 0; --i) {
         RemoveBranch *arg = new RemoveBranch{ i, padinfo.branches.at(name), &padinfo.branches, &cbdata };
-        gst_pad_add_probe (filters[i]->getPreviousPad(), GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM,
+        gst_pad_add_probe (filters[i]->getPreviousPad(), GST_PAD_PROBE_TYPE_IDLE,
                            branchUnlinkProbe, arg, NULL);
     }
 }

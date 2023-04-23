@@ -42,6 +42,7 @@ public:
 private:
     struct HandlerRemoveBundle {
         std::shared_ptr<LiveHandler> target;
+        guint timer;
 
         std::unordered_map<std::string, std::shared_ptr<LiveHandler>> *liveStreams;
         std::unordered_map<std::string, std::shared_ptr<LiveHandler>> *liveStreams_UUID;

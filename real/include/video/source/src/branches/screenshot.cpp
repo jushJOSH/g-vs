@@ -8,6 +8,8 @@
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include <oatpp/core/base/Environment.hpp>
+
 using boost::format;
 using boost::str;
 
@@ -16,7 +18,7 @@ ScreenshotBranch::ScreenshotBranch(const std::string &path)
         "filesink"
     )
 {
-    g_print("Created screenshot branch %s\n", uuid.c_str());
+    OATPP_LOGD("ScreenshotBranch", "Created screenshot branch %s", uuid.c_str());
     g_object_set(sink, "location", path.c_str(), NULL);
     
     if (!loadBin())
@@ -39,7 +41,7 @@ GstPad* ScreenshotBranch::getSinkPad(DataLine::LineType type) {
 
     switch(type) {
         case DataLine::LineType::Video:
-        g_print("ScreenshotBranch: Getting new video pad\n");
+        OATPP_LOGI("ScreenshotBranch", "Getting new video pad");
         newPad = gst_element_get_static_pad(sink, "sink");
 
         default:
@@ -68,7 +70,7 @@ GstElement *ScreenshotBranch::getFirstElement() const {
 }
 
 ScreenshotBranch::~ScreenshotBranch() {
-    g_print("ScreenshotBranch: destroyed one\n");
+    OATPP_LOGD("ScreenshotBranch", "destroyed one");
 
     unloadBin();
 }

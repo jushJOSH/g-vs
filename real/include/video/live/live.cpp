@@ -87,8 +87,8 @@ bool LiveHandler::onElementMessage(GstBus *bus, GstMessage *message, gpointer da
     // If already created 3 segments. Up to 3 segments is stable ???
     // TODO fix unstable first segment
     bundle->packetCount++;
-    if (bundle->packetCount >= 3) {
-        OATPP_LOGD("LiveHandler", "Now we think what stream is ready to watch!");
+    if (bundle->packetCount >= 2) {
+        OATPP_LOGI("LiveHandler", "Stream is ready");
         auto lock = std::lock_guard<std::mutex>(bundle->commonMutex);
         bundle->issuer->lastSegmentRequest = std::chrono::system_clock::now();
         bundle->ready = true;

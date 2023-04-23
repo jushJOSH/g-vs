@@ -8,6 +8,8 @@
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include <oatpp/core/base/Environment.hpp>
+
 using boost::format;
 using boost::str;
 
@@ -17,7 +19,7 @@ ArchiveBranch::ArchiveBranch(const std::string &path)
         "mp4mux"
     )
 {
-    g_print("Created archive branch %s\n", uuid.c_str());
+    OATPP_LOGD("ArchiveBranch", "Created archive branch %s", uuid.c_str());
     g_object_set(sink, "location", path.c_str(), NULL);
 
     if (!loadBin())
@@ -39,17 +41,17 @@ GstPad* ArchiveBranch::getSinkPad(DataLine::LineType type) {
     GstPad* newPad = nullptr;
     switch(type) {
         case DataLine::LineType::Audio:
-        g_print("StreamBranch: Getting new audio pad\n");
+        OATPP_LOGI("StreamBranch", "Getting new audio pad");
         newPad = gst_element_request_pad_simple(muxer, "audio_%u");
         break;
 
         case DataLine::LineType::Video:
-        g_print("StreamBranch: Getting new video pad\n");
+        OATPP_LOGI("StreamBranch", "Getting new video pad");
         newPad = gst_element_request_pad_simple(muxer, "video_%u");
         break;
 
         default:
-        g_print("StreamBranch: Getting new unknown pad\n");
+        OATPP_LOGW("StreamBranch", "Getting new unknown pad");
         return nullptr;
     }
 
@@ -74,7 +76,7 @@ GstElement *ArchiveBranch::getFirstElement() const {
 }
 
 ArchiveBranch::~ArchiveBranch() {
-    g_print("ArchiveBranch: destroyed one\n");
+    OATPP_LOGD("ArchiveBranch", "destroyed one");
 
     unloadBin();
 }

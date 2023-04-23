@@ -6,6 +6,8 @@
 #include <video/source/datalines/data.hpp>
 #include <api/dto/sourceconfig.hpp>
 
+#include <misc.hpp>
+
 class PipeBranch
 {
 public:
