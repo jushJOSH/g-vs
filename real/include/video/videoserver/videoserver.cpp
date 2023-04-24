@@ -91,7 +91,15 @@ bool Videoserver::onSourceStop(GstBus *bus, GstMessage *message, gpointer data) 
     auto removeData = (RemoveBranchData*)data;
     OATPP_LOGD("Videoserver", "Removed source %s because something happend to stream", removeData->targetSource->getUUID().c_str());
     
-    removeData->allSources->erase(removeData->targetSource->getUUID());
+    auto source = removeData->allSources->at(removeData->targetSource->getSource());
+    auto pipetree = source->getPipeTree_UNSAFE();
+    
+    // Force remove all branches. They are in paused state (on error or eos) so ok!
+    for (auto &branch : pipetree->getBranches())
+        pipetree->removeBranch_UNSAFE(branch.first);
+
+    // remove source itself
+    removeData->allSources->erase(removeData->targetSource->getSource());
     delete removeData;
 
     return false;

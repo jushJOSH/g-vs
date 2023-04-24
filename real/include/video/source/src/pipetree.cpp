@@ -193,3 +193,11 @@ void PipeTree::setOnBranchDeleted(const std::function<void(void*)> callback, voi
 GstElement* PipeTree::getPipeline() const {
     return pipeline;
 }
+
+std::unordered_map<std::string, std::shared_ptr<PipeBranch>> PipeTree::getBranches() const {
+    return padinfo.branches;
+}
+ 
+void PipeTree::removeBranch_UNSAFE(const std::string &name) {
+    padinfo.branches.erase(name);
+}

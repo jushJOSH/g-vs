@@ -22,21 +22,24 @@ LiveHandler::LiveHandler(const std::string &source)
     this->source_uuid = o_source->getUUID();
     this->branch_uuid = o_branch->getUUID();
 
-    this->hlsconfig = o_branch->getConfig();
+    this->hlsconfig = o_source->makeConfig(config->hlsPath);
     this->fileManager = std::make_shared<StaticFilesManager>(this->hlsconfig->playlist_folder);
 
     bundle.issuer = this;
-    auto id = o_source->addBusCallback("element", Source::BusCallbackData{
-        G_CALLBACK(onElementMessage),
-        &bundle
-    });
-    bundle.callback = id;
+
+    GFile* directory = g_file_new_for_path(this->hlsconfig->playlist_folder.c_str());
+    this->hlswatchdog = g_file_monitor_directory(directory, G_FILE_MONITOR_WATCH_MOVES, NULL, NULL);
+    if (this->hlswatchdog != NULL)
+        g_signal_connect(this->hlswatchdog, "changed", G_CALLBACK(folderChanged), &bundle);    
+    
+    g_object_unref(directory);
 }
 
 LiveHandler::~LiveHandler()
 {
-    OATPP_LOGD("LiveHandler", "Deleted %s", source_uuid);
+    OATPP_LOGD("LiveHandler", "Deleted %s", source_uuid.c_str());
     videoserver->removeBranchFromSource(source_uuid, branch_uuid);
+    g_object_unref(hlswatchdog);
 }
 
 oatpp::String LiveHandler::getPlaylist() {
@@ -70,33 +73,34 @@ std::condition_variable &LiveHandler::getCv() {
     return bundle.cv;
 } 
 
-bool LiveHandler::onElementMessage(GstBus *bus, GstMessage *message, gpointer data) {
+void LiveHandler::folderChanged(GFileMonitor *m, GFile* file, GFile *other, GFileMonitorEvent event, gpointer data) {
     auto bundle = (ReadyNotificationBundle*)data;
-
-    auto messageStruct = gst_message_get_structure(message);
-    if (!messageStruct) {
-        OATPP_LOGD("LiveHandler", "Received message has no structure in it");
-        return true;
+    switch (event) {
+        case GFileMonitorEvent::G_FILE_MONITOR_EVENT_CREATED:
+        {
+            auto filename = std::string(g_file_get_basename(file));
+            if (filename.ends_with(".m3u8")) {
+                OATPP_LOGD("LiveHandler", "Created new playlist %s", filename.c_str());
+                return;
+            } else if (filename.ends_with(".ts")) {
+                OATPP_LOGD("LiveHandler", "Created new playlist segment %s", filename.c_str());
+                
+                if (bundle->segmentCount >= 3) {
+                    OATPP_LOGI("LiveHandler", "Stream is ready");
+                    auto lock = std::lock_guard<std::mutex>(bundle->commonMutex);
+                    bundle->issuer->lastSegmentRequest = std::chrono::system_clock::now();
+                    bundle->ready = true;
+                    bundle->cv.notify_all();
+                    
+                    g_file_monitor_cancel(m);
+                } else bundle->segmentCount++;
+            }
+        }
+        break;
+        default:
+        OATPP_LOGD("LiveHandler", "Received non-create event");
+        return;
     }
-
-    if (!gst_structure_has_name(messageStruct, "splitmuxsink-fragment-closed")) {
-        OATPP_LOGD("LiveHandler", "Received message is not fragment closed or whatever");
-        return true;
-    }
-    
-    // If already created 3 segments. Up to 3 segments is stable ???
-    // TODO fix unstable first segment
-    bundle->packetCount++;
-    if (bundle->packetCount >= 2) {
-        OATPP_LOGI("LiveHandler", "Stream is ready");
-        auto lock = std::lock_guard<std::mutex>(bundle->commonMutex);
-        bundle->issuer->lastSegmentRequest = std::chrono::system_clock::now();
-        bundle->ready = true;
-        bundle->cv.notify_all();
-        g_signal_handler_disconnect(bus, bundle->callback);
-    }
-
-    return false;
 }
 
 std::string LiveHandler::getSourceUUID() const {
@@ -121,4 +125,8 @@ int LiveHandler::getBias() const {
 
 int LiveHandler::getSegmentDuration() const {
     return hlsconfig->target_duration;
+}
+
+GFileMonitor* LiveHandler::getWatchdog() const {
+    return hlswatchdog;
 }

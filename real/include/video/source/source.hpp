@@ -37,6 +37,7 @@ public:
     void setConfig(SourceConfigDto& config);
     bool isEmpty() const;
     void setRemoveBranchCallback(const std::function<void(void*)> callback, void* data);
+    PipeTree* getPipeTree_UNSAFE() const;
 
     // Branch management
     // Stream
@@ -46,10 +47,13 @@ public:
     std::shared_ptr<ArchiveBranch> runArchive(const std::string &path);
     
     void removeBranch(const std::string& branchid);
-
     gulong addBusCallback(const std::string &message, BusCallbackData data);
 
+    std::shared_ptr<HLSConfig> makeConfig(const std::string &hlsFolder, int playlistLenght = 4, int bias = 10);
+
 protected:
+    bool syncRequired = false;
+
     std::string source;
     std::string uuid;
     std::unique_ptr<PipeTree> sourceElements;

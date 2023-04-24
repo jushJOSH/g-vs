@@ -8,6 +8,7 @@
 #include <video/source/branches/stream.hpp>
 
 #include <utils/filemanager.hpp>
+#include <gio/gio.h>
 
 #include <types.hpp>
 
@@ -24,8 +25,7 @@ private:
         std::mutex commonMutex;
         std::condition_variable cv;
 
-        std::atomic_int packetCount = 0;
-        gulong callback;
+        std::atomic_int segmentCount = 0;
     };
 
 public:
@@ -45,11 +45,12 @@ public:
     std::string getSourceUUID() const;
     std::string getSourceUri() const;
     std::string getBranchUUID() const;
+    GFileMonitor* getWatchdog() const;
 
     oatpp::String guessMime(const oatpp::String &filename) const;
 
 private:
-    static bool onElementMessage(GstBus *bus, GstMessage *message, gpointer data);
+    static void folderChanged(GFileMonitor *m, GFile* file, GFile *other, GFileMonitorEvent event, gpointer data);
 
 private:
     OATPP_COMPONENT(std::shared_ptr<Videoserver>, videoserver);
@@ -57,6 +58,8 @@ private:
     
     ReadyNotificationBundle bundle;
     std::shared_ptr<HLSConfig> hlsconfig;
+    
+    GFileMonitor *hlswatchdog;
 
     std::string source_uri;
     std::string source_uuid;

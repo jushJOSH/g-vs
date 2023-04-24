@@ -53,9 +53,12 @@ public:
     void setSource(const std::string& source);
     void setBin(GstBin* bin);
     void removeBranch(const std::string &name);
+    void removeBranch_UNSAFE(const std::string &name);
     void addBranch(std::shared_ptr<PipeBranch> branch);
     GstStateChangeReturn setState(GstState state = GST_STATE_PLAYING); 
     void setConfig(SourceConfigDto& config);
+
+    std::unordered_map<std::string, std::shared_ptr<PipeBranch>> getBranches() const;
 
     GstElement* getSink(const std::string &name);
     bool noMoreBranches() const;

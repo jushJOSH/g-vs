@@ -17,6 +17,15 @@ class LiveHandler;
 #include OATPP_CODEGEN_BEGIN(ApiController)
 
 class VsapiController : public oatpp::web::server::api::ApiController {
+private:
+    struct HandlerRemoveBundle {
+        std::shared_ptr<LiveHandler> target;
+        guint timer;
+
+        std::unordered_map<std::string, std::shared_ptr<LiveHandler>> *liveStreams;
+        std::unordered_map<std::string, std::shared_ptr<LiveHandler>> *liveStreams_UUID;
+    };
+
 // Default constructor
 public:
     VsapiController(const std::shared_ptr<ObjectMapper>& objectMapper)
@@ -29,7 +38,7 @@ public:
         return std::make_shared<VsapiController>(objectMapper);
     }
 
-    static bool onSourceStop(GstBus *bus, GstMessage *message, gpointer data);
+    static void onBranchStop(HandlerRemoveBundle* handlerToDelete);
     static bool timeoutCheckUsage(gpointer data);
 
 // Endpoints
@@ -40,13 +49,6 @@ public:
              PATH(oatpp::String, uuid));
 
 private:
-    struct HandlerRemoveBundle {
-        std::shared_ptr<LiveHandler> target;
-        guint timer;
-
-        std::unordered_map<std::string, std::shared_ptr<LiveHandler>> *liveStreams;
-        std::unordered_map<std::string, std::shared_ptr<LiveHandler>> *liveStreams_UUID;
-    };
 
     // Map of SOURCE(URI) -> LiveHandler
     std::unordered_map<std::string, std::shared_ptr<LiveHandler>> liveStreams;

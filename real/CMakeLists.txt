@@ -9,9 +9,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(PkgConfig REQUIRED) 
 pkg_check_modules(GST REQUIRED gstreamer-1.0)
 pkg_check_modules(GLIB REQUIRED glib-2.0)
+pkg_check_modules(GIO REQUIRED gio-2.0)
 pkg_check_modules(GRTSP REQUIRED gstreamer-rtsp-1.0)
 pkg_check_modules(GST_APP REQUIRED gstreamer-app-1.0)
-pkg_check_modules(JSON REQUIRED nlohmann_json)
 
 find_package(oatpp          1.3.0 REQUIRED)
 find_package(oatpp-swagger  1.3.0 REQUIRED)
@@ -40,5 +40,5 @@ set(SOURCES
 
 # Добавление исходных файлов и подключаемых директорий
 add_executable(${PROJECT_NAME} ${SOURCES})
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${GST_INCLUDE_DIRS} ${GLIB_INCLUDE_DIRS} ${GST_APP_INCLUDE_DIRS} ${JSON_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${GST_LIBRARIES} ${GLIB_LIBRARIES} ${GST_APP_LIBRARIES} ${JSON_LIBRARIES} oatpp::oatpp oatpp::oatpp-swagger oatpp::oatpp-postgresql Threads::Threads jwt-cpp::jwt-cpp)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${GST_INCLUDE_DIRS} ${GLIB_INCLUDE_DIRS} ${GST_APP_INCLUDE_DIRS} ${JSON_INCLUDE_DIRS} ${GIO_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${GST_LIBRARIES} ${GLIB_LIBRARIES} ${GST_APP_LIBRARIES} ${JSON_LIBRARIES} ${GIO_LIBRARIES} oatpp::oatpp oatpp::oatpp-swagger oatpp::oatpp-postgresql Threads::Threads jwt-cpp::jwt-cpp)

@@ -48,11 +48,15 @@ std::string Source::getUUID() const {
 }
 
 std::shared_ptr<StreamBranch> Source::runStream(const std::string &hlsFolder) {
-    auto config = std::make_shared<HLSConfig>(hlsFolder, this->uuid, 4, 10);
+    auto config = makeConfig(hlsFolder);
     auto streamBranch = std::make_shared<StreamBranch>(config);
     sourceElements->addBranch(streamBranch);
 
     return streamBranch;
+}
+
+std::shared_ptr<HLSConfig> Source::makeConfig(const std::string &hlsFolder, int playlistLenght, int bias) {
+    return std::make_shared<HLSConfig>(hlsFolder, this->uuid, playlistLenght, bias);
 }
 
 std::shared_ptr<ArchiveBranch> Source::runArchive(const std::string &path) {
@@ -81,4 +85,8 @@ void Source::setRemoveBranchCallback(const std::function<void(void*)> callback, 
 gulong Source::addBusCallback(const std::string &message, BusCallbackData data) {
     auto signal = str(format("message::%s") % message);
     return g_signal_connect(this->bus, signal.c_str(), G_CALLBACK(data.callback), data.data);
+}
+
+PipeTree* Source::getPipeTree_UNSAFE() const {
+    return sourceElements.get();
 }
