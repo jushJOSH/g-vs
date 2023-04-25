@@ -22,6 +22,16 @@ Source::Source(const std::string &source)
     this->source = source;
     this->bus = this->sourceElements->getBus();
     gst_bus_add_signal_watch(this->bus);
+    
+    auto discoverer = gst_discoverer_new(10 * GST_SECOND, NULL);
+    if (!discoverer) throw std::runtime_error("Could not create discoverer for source probing");
+
+    auto info = gst_discoverer_discover_uri(discoverer, source.c_str(), NULL);
+    if (!info) throw std::runtime_error("Could not probe requested source");
+
+    this->isLive = gst_discoverer_info_get_live(info);
+    g_object_unref(discoverer);
+    g_object_unref(info);
 }
 
 Source::Source(const std::string &source, SourceConfigDto& config)
@@ -49,7 +59,7 @@ std::string Source::getUUID() const {
 
 std::shared_ptr<StreamBranch> Source::runStream(const std::string &hlsFolder) {
     auto config = makeConfig(hlsFolder);
-    auto streamBranch = std::make_shared<StreamBranch>(config);
+    auto streamBranch = std::make_shared<StreamBranch>(config, !isLive);
     sourceElements->addBranch(streamBranch);
 
     return streamBranch;

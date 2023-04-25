@@ -2,6 +2,7 @@
 
 #include <gst/gst.h>
 #include <gst/app/app.h>
+#include <gst/pbutils/pbutils.h>
 #include <glib.h>
 
 #include <memory>
@@ -52,7 +53,7 @@ public:
     std::shared_ptr<HLSConfig> makeConfig(const std::string &hlsFolder, int playlistLenght = 4, int bias = 10);
 
 protected:
-    bool syncRequired = false;
+    bool isLive;
 
     std::string source;
     std::string uuid;

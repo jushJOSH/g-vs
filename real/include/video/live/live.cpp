@@ -85,7 +85,7 @@ void LiveHandler::folderChanged(GFileMonitor *m, GFile* file, GFile *other, GFil
             } else if (filename.ends_with(".ts")) {
                 OATPP_LOGD("LiveHandler", "Created new playlist segment %s", filename.c_str());
                 
-                if (bundle->segmentCount >= 3) {
+                if (bundle->segmentCount >= 2) {
                     OATPP_LOGI("LiveHandler", "Stream is ready");
                     auto lock = std::lock_guard<std::mutex>(bundle->commonMutex);
                     bundle->issuer->lastSegmentRequest = std::chrono::system_clock::now();
