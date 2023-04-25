@@ -38,8 +38,8 @@ void VsapiService::modifyMedia(const oatpp::Object<MediaDto>& dto) {
     OATPP_ASSERT_HTTP(result->isSuccess(), VSTypes::OatStatus::CODE_500, result->getErrorMessage());
 } 
 
-void VsapiService::removeMedia(const oatpp::Object<MediaDto>& dto) {
-    auto result = vsapi_database->removeMedia(dto->id);
+void VsapiService::removeMedia(const oatpp::Int32 mediaid) {
+    auto result = vsapi_database->removeMedia(mediaid);
     OATPP_ASSERT_HTTP(result->isSuccess(), VSTypes::OatStatus::CODE_500, result->getErrorMessage());
 }
 
@@ -88,4 +88,36 @@ void VsapiService::initVsapiTable() {
     createSourceIfNotExists();
     createMediaIfNotExists();
     createMedia_SourceIfNotExists();
+}
+
+bool VsapiService::isMediaBelongsToUser(oatpp::Int32 mediaid, oatpp::Int32 userid) {
+    auto query_result = vsapi_database->isMediaBelongsToUser(userid);
+    OATPP_ASSERT_HTTP(query_result->isSuccess(), VSTypes::OatStatus::CODE_500, query_result->getErrorMessage());
+
+    auto receivedData = query_result->fetch<oatpp::Vector<oatpp::Object<MediaDto>>>();
+    auto found = std::find_if(receivedData->begin(), receivedData->end(), [mediaid](const MediaDto::Wrapper elem) {
+        return elem->id == mediaid;
+    });
+
+    return found != receivedData->end();
+}
+
+bool VsapiService::isSourceBelongsToUser(oatpp::Int32 sourceid, oatpp::Int32 userid) {
+    auto query_result = vsapi_database->isMediaBelongsToUser(userid);
+    OATPP_ASSERT_HTTP(query_result->isSuccess(), VSTypes::OatStatus::CODE_500, query_result->getErrorMessage());
+
+    auto receivedData = query_result->fetch<oatpp::Vector<oatpp::Object<SourceDto>>>();
+    auto found = std::find_if(receivedData->begin(), receivedData->end(), [sourceid](const MediaDto::Wrapper elem) {
+        return elem->id == sourceid;
+    });
+
+    return found != receivedData->end();
+}
+
+bool VsapiService::isMediaContainsSource(oatpp::Int32 mediaid, oatpp::Int32 sourceid) {
+    auto query_result = vsapi_database->isMediaHasSource(mediaid, sourceid);
+    OATPP_ASSERT_HTTP(query_result->isSuccess(), VSTypes::OatStatus::CODE_500, query_result->getErrorMessage());
+    auto receivedData = query_result->fetch<oatpp::Vector<oatpp::Object<SourceDto>>>();
+
+    return !receivedData->empty();
 }

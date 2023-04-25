@@ -23,6 +23,27 @@ public:
     " WHERE auth.auth_token=:auth_token;",
     PARAM(oatpp::String, auth_token))
 
+    QUERY(isMediaBelongsToUser,
+    "SELECT media.id"
+    " FROM media"
+    " WHERE media.owner = :owner_id",
+    PARAM(oatpp::Int32, owner_id))
+
+    QUERY(isSourceBelongsToUser,
+    "SELECT source.id"
+    " FROM source"
+    " LEFT JOIN media_source ON media_source.source_id = source.id"
+    " LEFT JOIN media ON media_source.media_id = media.id"
+    " WHERE media.owner = :owner_id",
+    PARAM(oatpp::Int32, owner_id))
+
+    QUERY(isMediaHasSource,
+    "SELECT *"
+    " FROM media_source"
+    " WHERE media_source.media_id = :media_id AND media_source.source_id = :source_id",
+    PARAM(oatpp::Int32, media_id),
+    PARAM(oatpp::Int32, source_id))
+
     QUERY(getSourceByMedia,
     "SELECT id, host, config"
     " FROM source" 

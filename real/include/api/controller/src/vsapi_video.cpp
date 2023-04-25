@@ -14,19 +14,13 @@ VSTypes::OatResponse VsapiController::getLive(const oatpp::String &source) {
         auto removebundle = new HandlerRemoveBundle{
             newHandler,
             0, // No timer
+            0, // current attempts
+            3, // max attempts
             &liveStreams,
             &liveStreams_UUID
         };
 
         OATPP_COMPONENT(std::shared_ptr<Videoserver>, videoserver);
-        // videoserver->openSource(source)->addBusCallback("eos", Source::BusCallbackData {
-        //     G_CALLBACK(onSourceStop),
-        //     removebundle
-        // });
-        // videoserver->openSource(source)->addBusCallback("error", Source::BusCallbackData{
-        //     G_CALLBACK(onSourceStop),
-        //     removebundle
-        // });
         removebundle->timer = g_timeout_add_seconds(10, G_SOURCE_FUNC(timeoutCheckUsage), removebundle);
         liveStreams[source] = newHandler;
         liveStreams_UUID[newHandler->getSourceUUID()] = newHandler;   
@@ -104,6 +98,14 @@ bool VsapiController::timeoutCheckUsage(gpointer data) {
         && removeBundle->target->isReady())
     {
         OATPP_LOGI("VsapiController", "Really timed out. Remove this funny");
+        onBranchStop(removeBundle);
+        return false;
+    } else if (!removeBundle->target->isReady())
+        removeBundle->unreadyAttempt++;
+
+    if (removeBundle->unreadyAttempt > removeBundle->maxAttempt)
+    {
+        OATPP_LOGW("VsapiController", "Source aint ready in %d attempts. Removing...", removeBundle->unreadyAttempt);
         onBranchStop(removeBundle);
         return false;
     }

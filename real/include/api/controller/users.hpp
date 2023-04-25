@@ -15,9 +15,9 @@ class UserController : public oatpp::web::server::api::ApiController {
 // Default constructor
 public:
     UserController(const std::shared_ptr<ObjectMapper>& objectMapper)
-    :oatpp::web::server::api::ApiController(objectMapper)
+    :   oatpp::web::server::api::ApiController(objectMapper),
+        jsonMapper(oatpp::parser::json::mapping::ObjectMapper::createShared())
     {
-        jsonMapper = oatpp::parser::json::mapping::ObjectMapper::createShared();
         setDefaultAuthorizationHandler(std::make_shared<AuthHandler>(jwt));
     }
 

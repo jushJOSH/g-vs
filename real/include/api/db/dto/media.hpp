@@ -14,9 +14,9 @@ class MediaDto : public oatpp::DTO {
     DTO_FIELD(String, title);
     DTO_FIELD(Int32, default_source) = -1;
     DTO_FIELD(Vector<oatpp::Object<SourceDto>>, sources);
-    DTO_FIELD(String, digest);
     DTO_FIELD(String, login);
     DTO_FIELD(String, password);
+    DTO_FIELD(Int32, owner);
 };
 
 #include OATPP_CODEGEN_END(DTO)
