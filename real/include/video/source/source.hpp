@@ -58,6 +58,6 @@ protected:
     std::string source;
     std::string uuid;
     std::unique_ptr<PipeTree> sourceElements;
-
+    
     GstBus* bus;
 };

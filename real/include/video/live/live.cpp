@@ -13,7 +13,7 @@
 using boost::format;
 using boost::str;
 
-LiveHandler::LiveHandler(const std::string &source)
+LiveHandler::LiveHandler(const std::string &source, const SourceConfigDto& config)
 :   source_uri(source)
 {   
     auto o_source = videoserver->openSource(source);

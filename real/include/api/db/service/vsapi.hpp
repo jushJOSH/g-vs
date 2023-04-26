@@ -14,6 +14,7 @@ class VsapiService {
 public:
     oatpp::Vector<oatpp::Object<MediaDto>> getMediaByUser(const oatpp::String& authToken);
     oatpp::Vector<oatpp::Object<SourceDto>> getSourceByMedia(const oatpp::Object<MediaDto>& dto);
+    oatpp::Object<SourceDto> getSourceById(oatpp::Int32 sourceid);
     bool isMediaBelongsToUser(oatpp::Int32 mediaid, oatpp::Int32 userid);
     bool isSourceBelongsToUser(oatpp::Int32 sourceid, oatpp::Int32 userid);
     bool isMediaContainsSource(oatpp::Int32 mediaid, oatpp::Int32 sourceid);

@@ -5,12 +5,20 @@
 
 #include <chrono>
 
-VSTypes::OatResponse VsapiController::getLive(const oatpp::String &source) {
+VSTypes::OatResponse VsapiController::getLive(const std::shared_ptr<JwtPayload> &payload, const oatpp::Int32 &source) {
     using namespace std;
-    
-    if (!liveStreams.contains(source))
-    {
-        auto newHandler = std::make_shared<LiveHandler>(source);
+
+    bool success;
+    auto userid = oatpp::utils::conversion::strToInt32(payload->userId, success);
+    OATPP_ASSERT_HTTP(success, Status::CODE_401, "Unknown user id");
+    OATPP_ASSERT_HTTP(vsapiService.isSourceBelongsToUser(source, userid), 
+                      Status::CODE_404, "No source found");
+    auto source_obj = vsapiService.getSourceById(source);
+
+    if (!liveStreams.contains(source_obj->host))
+    {   
+        auto config = jsonMapper->readFromString<oatpp::Object<SourceConfigDto>>(source_obj->config);
+        auto newHandler = std::make_shared<LiveHandler>(source_obj->host, config);
         auto removebundle = new HandlerRemoveBundle{
             newHandler,
             0, // No timer
@@ -22,7 +30,7 @@ VSTypes::OatResponse VsapiController::getLive(const oatpp::String &source) {
 
         OATPP_COMPONENT(std::shared_ptr<Videoserver>, videoserver);
         removebundle->timer = g_timeout_add_seconds(10, G_SOURCE_FUNC(timeoutCheckUsage), removebundle);
-        liveStreams[source] = newHandler;
+        liveStreams[source_obj->host] = newHandler;
         liveStreams_UUID[newHandler->getSourceUUID()] = newHandler;   
     }
     
@@ -41,7 +49,7 @@ VSTypes::OatResponse VsapiController::getLive(const oatpp::String &source) {
            : createResponse(Status::CODE_408);
 }
 
-VSTypes::OatResponse VsapiController::getStatic(const VSTypes::OatRequest &request, const oatpp::String &uuid) {
+VSTypes::OatResponse VsapiController::getStatic(const VSTypes::OatRequest &request, const oatpp::String &uuid, const std::shared_ptr<JwtPayload> &payload) {
     using namespace std;
 
     auto filepath = request->getPathTail();
@@ -64,51 +72,10 @@ VSTypes::OatResponse VsapiController::getStatic(const VSTypes::OatRequest &reque
     return handler->getSegment(filepath);
 }
 
-void VsapiController::onBranchStop(VsapiController::HandlerRemoveBundle* handlerToDelete) {
-    std::string sourceUri = handlerToDelete->target->getSourceUri();
-    OATPP_LOGW("VsapiController", "Branch %s stopped on timeout", sourceUri.c_str());
+VSTypes::OatResponse VsapiController::getFrame(const std::shared_ptr<JwtPayload> &payload, const oatpp::web::server::api::ApiController::QueryParams &QueryParams) {
 
-    if (!handlerToDelete->liveStreams->contains(sourceUri)) return;
-
-    OATPP_COMPONENT(std::shared_ptr<Videoserver>, videoserver);
-    handlerToDelete->liveStreams->erase(sourceUri);
-    handlerToDelete->liveStreams_UUID->erase(handlerToDelete->target->getSourceUUID());
-
-    // Stop timeout timer
-    if (handlerToDelete->timer != -1)
-        g_source_remove(handlerToDelete->timer);
-
-    delete handlerToDelete;
-    OATPP_LOGD("VsapiController", "Gotcha");
 }
 
-bool VsapiController::timeoutCheckUsage(gpointer data) {
-    OATPP_LOGI("VsapiController", "About to check if timeout");
-    auto removeBundle = (HandlerRemoveBundle*)data;
+VSTypes::OatResponse VsapiController::modifyArchive(const std::shared_ptr<JwtPayload> &payload, const oatpp::String &mediainfo) {
 
-    auto currentTime = std::chrono::system_clock::now();
-    auto previousTime = removeBundle->target->getLastTimestamp();
-    int bias = removeBundle->target->getBias();
-    int segmentLenght = removeBundle->target->getSegmentDuration();
-    
-    OATPP_LOGD("VsapiController", "Lets see:\nPrev: %ld\nCurr: %ld", 
-                (previousTime + std::chrono::seconds(segmentLenght) + std::chrono::seconds(bias)).time_since_epoch().count(),
-                currentTime.time_since_epoch().count());
-    if ((previousTime + std::chrono::seconds(segmentLenght) + std::chrono::seconds(bias)) < currentTime
-        && removeBundle->target->isReady())
-    {
-        OATPP_LOGI("VsapiController", "Really timed out. Remove this funny");
-        onBranchStop(removeBundle);
-        return false;
-    } else if (!removeBundle->target->isReady())
-        removeBundle->unreadyAttempt++;
-
-    if (removeBundle->unreadyAttempt > removeBundle->maxAttempt)
-    {
-        OATPP_LOGW("VsapiController", "Source aint ready in %d attempts. Removing...", removeBundle->unreadyAttempt);
-        onBranchStop(removeBundle);
-        return false;
-    }
-
-    return true;
 }

@@ -29,7 +29,7 @@ private:
     };
 
 public:
-    LiveHandler(const std::string &sourceUri);
+    LiveHandler(const std::string &sourceUri, const SourceConfigDto& config = default);
     ~LiveHandler();
 
     oatpp::String getPlaylist();

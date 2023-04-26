@@ -121,3 +121,11 @@ bool VsapiService::isMediaContainsSource(oatpp::Int32 mediaid, oatpp::Int32 sour
 
     return !receivedData->empty();
 }
+
+oatpp::Object<SourceDto> VsapiService::getSourceById(oatpp::Int32 sourceid) {
+    auto query_result = vsapi_database->getSourceById(sourceid);
+    OATPP_ASSERT_HTTP(query_result->isSuccess(), VSTypes::OatStatus::CODE_500, query_result->getErrorMessage());
+    auto receivedSource = query_result->fetch<oatpp::Object<SourceDto>>(1);
+
+    return receivedSource;
+}

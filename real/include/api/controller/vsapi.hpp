@@ -86,7 +86,7 @@ public:
                                                   QUERY(oatpp::Int32, source));
     // GET LIVE FOR SELECTED SOURCE OR MEDIA
     ENDPOINT("GET", "/vsapi/live", getLive, AUTHORIZATION(std::shared_ptr<JwtPayload>, payload),
-                                            QUERIES(QueryParams, QueryParams));
+                                            QUERY(oatpp::Int32, source));
     ENDPOINT("GET", "/vsapi/static/{uuid}/*",  getStatic,
              REQUEST(std::shared_ptr<IncomingRequest>, request),
              PATH(oatpp::String, uuid),

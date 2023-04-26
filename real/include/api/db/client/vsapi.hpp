@@ -51,6 +51,12 @@ public:
     " WHERE media_id = :media_id;",
     PARAM(oatpp::Int32, media_id))
 
+    QUERY(getSourceById,
+    "SELECT id, host, config"
+    " FROM source"
+    " WHERE id = :source_id;",
+    PARAM(oatpp::Int32, source_id))
+
     QUERY(changeDefaultSource,
     "UPDATE media" 
     " SET default_source=:source_id"
