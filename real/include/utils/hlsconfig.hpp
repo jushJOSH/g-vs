@@ -11,7 +11,7 @@ struct HLSConfig {
         using boost::str;
         using boost::format;
         
-        playlist_folder = str(format("%s/%s") % playlistFolder % playlistId);
+        playlist_folder = playlistFolder;
         playlist_root = str(format("static/%s") % playlistId);
         segment_loc = str(format("%s/segment\%\%05d.ts") % playlist_folder);
         playlist_loc = str(format("%s/playlist.m3u8") % playlist_folder);

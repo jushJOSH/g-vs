@@ -71,7 +71,7 @@ public:
     OATPP_CREATE_COMPONENT(std::shared_ptr<JWT>, jwt)([]{
         OATPP_COMPONENT(oatpp::Object<ConfigDto>, config);
 
-        oatpp::String secret = oatpp::String::loadFromFile(config->secretPath->c_str());
+        oatpp::String secret = oatpp::String::loadFromFile(config->tokenSalt->c_str());
         if (secret == nullptr) throw std::runtime_error("secretPath is non-existing file!");
         
         return std::make_shared<JWT>(secret, config->issuer);

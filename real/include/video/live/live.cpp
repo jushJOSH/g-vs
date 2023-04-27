@@ -13,16 +13,17 @@
 using boost::format;
 using boost::str;
 
-LiveHandler::LiveHandler(const std::string &source, const SourceConfigDto& config)
-:   source_uri(source)
+LiveHandler::LiveHandler(int sourceid, std::shared_ptr<SourceConfigDto> config)
+:   source_uri(config->source_url)
 {   
-    auto o_source = videoserver->openSource(source);
-    auto o_branch = o_source->runStream(config->hlsPath);
+    auto o_source = videoserver->openSource(config);
+    auto hlsPath = str(format("%s/%d") % appconfig->hlsPath->c_str() % sourceid);
+    auto o_branch = o_source->runStream(hlsPath);
 
     this->source_uuid = o_source->getUUID();
     this->branch_uuid = o_branch->getUUID();
 
-    this->hlsconfig = o_source->makeConfig(config->hlsPath);
+    this->hlsconfig = o_source->makeConfig(hlsPath);
     this->fileManager = std::make_shared<StaticFilesManager>(this->hlsconfig->playlist_folder);
 
     bundle.issuer = this;

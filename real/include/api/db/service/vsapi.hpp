@@ -15,6 +15,7 @@ public:
     oatpp::Vector<oatpp::Object<MediaDto>> getMediaByUser(const oatpp::String& authToken);
     oatpp::Vector<oatpp::Object<SourceDto>> getSourceByMedia(const oatpp::Object<MediaDto>& dto);
     oatpp::Object<SourceDto> getSourceById(oatpp::Int32 sourceid);
+    oatpp::Object<MediaDto> getMediaById(oatpp::Int32 mediaid);
     bool isMediaBelongsToUser(oatpp::Int32 mediaid, oatpp::Int32 userid);
     bool isSourceBelongsToUser(oatpp::Int32 sourceid, oatpp::Int32 userid);
     bool isMediaContainsSource(oatpp::Int32 mediaid, oatpp::Int32 sourceid);
@@ -24,7 +25,7 @@ public:
     void removeMedia(const oatpp::Int32 mediaid);
     void addSource(const oatpp::Object<SourceDto>& sourceDto, const oatpp::Object<SourceDto>& mediaDto);
     void modifySource(const oatpp::Object<SourceDto>& sourceDto);
-    void removeSource(const oatpp::Object<SourceDto>& dto);
+    void removeSource(const oatpp::Int32& sourceid);
 
     void initVsapiTable();
     

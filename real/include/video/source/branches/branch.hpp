@@ -11,7 +11,7 @@
 class PipeBranch
 {
 public:
-    PipeBranch(const std::string& sink, const std::string& muxer = "");
+    PipeBranch(const std::string& sink, const std::string& muxer = "", std::shared_ptr<SourceConfigDto> config = nullptr);
     virtual ~PipeBranch();
 
     // Getters
@@ -54,7 +54,7 @@ protected:
     std::vector<std::shared_ptr<DataLine>> filters;
     std::string uuid;
 
-    SourceConfigDto config;
+    std::shared_ptr<SourceConfigDto> config;
 
     GstElement* muxer;
     GstElement* sink;

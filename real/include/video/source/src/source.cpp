@@ -34,8 +34,8 @@ Source::Source(const std::string &source)
     g_object_unref(info);
 }
 
-Source::Source(const std::string &source, SourceConfigDto& config)
-:   Source(source)
+Source::Source(std::shared_ptr<SourceConfigDto> config)
+:   Source(config->source_url)
 {
     sourceElements->setConfig(config);
 }
@@ -49,7 +49,7 @@ Source::~Source() {
     g_object_unref(bus);
 }
 
-void Source::setConfig(SourceConfigDto& config) {
+void Source::setConfig(std::shared_ptr<SourceConfigDto> config) {
     sourceElements->setConfig(config);
 }
 

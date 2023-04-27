@@ -28,14 +28,14 @@ public:
     // Test consturctor for source
     Source();
     Source(const std::string& source);
-    Source(const std::string& source, SourceConfigDto& config);
+    Source(std::shared_ptr<SourceConfigDto> config);
     ~Source();
 
     // Get/Set things
     std::string getUUID() const;
     std::string getSource() const;
     GstStateChangeReturn setState(GstState state = GST_STATE_PLAYING);
-    void setConfig(SourceConfigDto& config);
+    void setConfig(std::shared_ptr<SourceConfigDto> config);
     bool isEmpty() const;
     void setRemoveBranchCallback(const std::function<void(void*)> callback, void* data);
     PipeTree* getPipeTree_UNSAFE() const;
@@ -57,7 +57,7 @@ protected:
 
     std::string source;
     std::string uuid;
-    std::unique_ptr<PipeTree> sourceElements;
+    std::unique_ptr<PipeTree> sourceElements = nullptr;
     
     GstBus* bus;
 };

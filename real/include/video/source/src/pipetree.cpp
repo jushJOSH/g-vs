@@ -124,6 +124,12 @@ PipeTree::PipeTree(const std::string& source)
     setSource(source);
 }
 
+PipeTree::PipeTree(std::shared_ptr<SourceConfigDto> config) 
+:   PipeTree(config->source_url)
+{
+    setConfig(config);
+}
+
 PipeTree::~PipeTree() {
     OATPP_LOGD("PipeTree", "Deleted tree %s", uuid.c_str());
 
@@ -177,7 +183,7 @@ GstStateChangeReturn PipeTree::setState(GstState state) {
     return stateResult;
 }
 
-void PipeTree::setConfig(SourceConfigDto& config) {
+void PipeTree::setConfig(std::shared_ptr<SourceConfigDto> config) {
     padinfo.config = config;
 }
 
@@ -200,4 +206,8 @@ std::unordered_map<std::string, std::shared_ptr<PipeBranch>> PipeTree::getBranch
  
 void PipeTree::removeBranch_UNSAFE(const std::string &name) {
     padinfo.branches.erase(name);
+}
+
+std::shared_ptr<SourceConfigDto> PipeTree::getConfig() const {
+    return this->padinfo.config;
 }

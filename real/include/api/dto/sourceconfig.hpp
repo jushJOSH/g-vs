@@ -10,7 +10,6 @@ class SourceConfigDto : public oatpp::DTO {
 
     // Source settings
     DTO_FIELD(String, cache_mode) = "stream";
-    DTO_FIELD(String, archive_path);
     DTO_FIELD(String, source_url);
 
     // Videoline settings

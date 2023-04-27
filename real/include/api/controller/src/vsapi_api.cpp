@@ -77,3 +77,22 @@ VSTypes::OatResponse VsapiController::deleteSource(const std::shared_ptr<JwtPayl
     vsapiService.removeSource(source);
     return createResponse(Status::CODE_200, oatpp::utils::conversion::int32ToStr(source));
 }
+
+VSTypes::OatResponse VsapiController::getSpecialMedia(const std::shared_ptr<JwtPayload> &payload, const oatpp::Int32 &media) {
+    bool success;
+
+    auto userid = oatpp::utils::conversion::strToInt32(payload->userId, success);
+    OATPP_ASSERT_HTTP(success, Status::CODE_401, "Unknown user id");
+    OATPP_ASSERT_HTTP(vsapiService.isMediaBelongsToUser(media, userid), Status::CODE_404, "No media found");
+
+    return createDtoResponse(Status::CODE_200, vsapiService.getMediaById(media));
+}
+
+VSTypes::OatResponse VsapiController::getMedia(const std::shared_ptr<JwtPayload> &payload) {
+    bool success;
+
+    auto userid = oatpp::utils::conversion::strToInt32(payload->userId, success);
+    OATPP_ASSERT_HTTP(success, Status::CODE_401, "Unknown user id");
+
+    return createDtoResponse(Status::CODE_200, vsapiService.getMediaByUser(payload->token));
+}

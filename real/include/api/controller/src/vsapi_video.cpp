@@ -17,8 +17,9 @@ VSTypes::OatResponse VsapiController::getLive(const std::shared_ptr<JwtPayload> 
 
     if (!liveStreams.contains(source_obj->host))
     {   
-        auto config = jsonMapper->readFromString<oatpp::Object<SourceConfigDto>>(source_obj->config);
-        auto newHandler = std::make_shared<LiveHandler>(source_obj->host, config);
+        std::shared_ptr<SourceConfigDto> config = jsonMapper->readFromString<oatpp::Object<SourceConfigDto>>(source_obj->config).getPtr();
+        auto sourceid_str = oatpp::utils::conversion::int32ToStdStr(source);
+        auto newHandler = std::make_shared<LiveHandler>(source, config);
         auto removebundle = new HandlerRemoveBundle{
             newHandler,
             0, // No timer
@@ -31,34 +32,34 @@ VSTypes::OatResponse VsapiController::getLive(const std::shared_ptr<JwtPayload> 
         OATPP_COMPONENT(std::shared_ptr<Videoserver>, videoserver);
         removebundle->timer = g_timeout_add_seconds(10, G_SOURCE_FUNC(timeoutCheckUsage), removebundle);
         liveStreams[source_obj->host] = newHandler;
-        liveStreams_UUID[newHandler->getSourceUUID()] = newHandler;   
+        liveStreams_UUID[sourceid_str] = newHandler;   
     }
     
-    auto lock = std::unique_lock<std::mutex>(liveStreams[source]->getMutex());
+    auto lock = std::unique_lock<std::mutex>(liveStreams[source_obj->host]->getMutex());
     // false - timeout
-    bool waitResult = liveStreams[source]->getCv().wait_for(
+    bool waitResult = liveStreams[source_obj->host]->getCv().wait_for(
         lock,
         1min,
-        [live = liveStreams[source]] {
+        [live = liveStreams[source_obj->host]] {
             return live->isReady();
         }
     );
 
     return waitResult
-           ? createResponse(Status::CODE_200, liveStreams[source]->getPlaylist())
+           ? createResponse(Status::CODE_200, liveStreams[source_obj->host]->getPlaylist())
            : createResponse(Status::CODE_408);
 }
 
-VSTypes::OatResponse VsapiController::getStatic(const VSTypes::OatRequest &request, const oatpp::String &uuid, const std::shared_ptr<JwtPayload> &payload) {
+VSTypes::OatResponse VsapiController::getStatic(const VSTypes::OatRequest &request, const oatpp::Int32 &source, const std::shared_ptr<JwtPayload> &payload) {
     using namespace std;
 
     auto filepath = request->getPathTail();
-    auto range = request->getHeader(Header::RANGE);
-    
-    if (!liveStreams_UUID.contains(uuid))
+    auto sourceid_str = oatpp::utils::conversion::int32ToStdStr(source);
+
+    if (!liveStreams_UUID.contains(sourceid_str))
         return createResponse(Status::CODE_404, "Stream not found");
 
-    auto handler = liveStreams_UUID[uuid];
+    auto handler = liveStreams_UUID[sourceid_str];
     auto lock = std::unique_lock<std::mutex>(handler->getMutex());
     // false - timeout
     bool waitResult = handler->getCv().wait_for(
@@ -76,6 +77,6 @@ VSTypes::OatResponse VsapiController::getFrame(const std::shared_ptr<JwtPayload>
 
 }
 
-VSTypes::OatResponse VsapiController::modifyArchive(const std::shared_ptr<JwtPayload> &payload, const oatpp::String &mediainfo) {
-
+VSTypes::OatResponse VsapiController::getArchive(const std::shared_ptr<JwtPayload> &payload, const oatpp::Int32 &source) {
+    
 }

@@ -60,8 +60,8 @@ void VsapiService::modifySource(const oatpp::Object<SourceDto>& dto) {
     OATPP_ASSERT_HTTP(result->isSuccess(), VSTypes::OatStatus::CODE_500, result->getErrorMessage());
 }
 
-void VsapiService::removeSource(const oatpp::Object<SourceDto>& dto) {
-    auto result = vsapi_database->removeSource(dto->id);
+void VsapiService::removeSource(const oatpp::Int32 &sourceid) {
+    auto result = vsapi_database->removeSource(sourceid);
     OATPP_ASSERT_HTTP(result->isSuccess(), VSTypes::OatStatus::CODE_500, result->getErrorMessage());
 }
 
@@ -107,7 +107,7 @@ bool VsapiService::isSourceBelongsToUser(oatpp::Int32 sourceid, oatpp::Int32 use
     OATPP_ASSERT_HTTP(query_result->isSuccess(), VSTypes::OatStatus::CODE_500, query_result->getErrorMessage());
 
     auto receivedData = query_result->fetch<oatpp::Vector<oatpp::Object<SourceDto>>>();
-    auto found = std::find_if(receivedData->begin(), receivedData->end(), [sourceid](const MediaDto::Wrapper elem) {
+    auto found = std::find_if(receivedData->begin(), receivedData->end(), [sourceid](const SourceDto::Wrapper elem) {
         return elem->id == sourceid;
     });
 
@@ -128,4 +128,12 @@ oatpp::Object<SourceDto> VsapiService::getSourceById(oatpp::Int32 sourceid) {
     auto receivedSource = query_result->fetch<oatpp::Object<SourceDto>>(1);
 
     return receivedSource;
+}
+
+oatpp::Object<MediaDto> VsapiService::getMediaById(oatpp::Int32 mediaid) {
+    auto query_result = vsapi_database->getMediaById(mediaid);
+    OATPP_ASSERT_HTTP(query_result->isSuccess(), VSTypes::OatStatus::CODE_500, query_result->getErrorMessage());
+    auto receivedMedia = query_result->fetch<oatpp::Object<MediaDto>>(1);
+
+    return receivedMedia;
 }

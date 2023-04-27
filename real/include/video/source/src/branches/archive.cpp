@@ -21,6 +21,7 @@ ArchiveBranch::ArchiveBranch(const std::string &path)
 {
     OATPP_LOGD("ArchiveBranch", "Created archive branch %s", uuid.c_str());
     g_object_set(sink, "location", path.c_str(), NULL);
+    g_object_set(sink, "append", true, NULL);
 
     if (!loadBin())
         throw std::runtime_error("Could not link elements for some reason...");
@@ -78,5 +79,5 @@ GstElement *ArchiveBranch::getFirstElement() const {
 ArchiveBranch::~ArchiveBranch() {
     OATPP_LOGD("ArchiveBranch", "destroyed one");
 
-    unloadBin();
+    gst_element_set_state(GST_ELEMENT(bin), GST_STATE_NULL);
 }

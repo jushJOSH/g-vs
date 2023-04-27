@@ -21,7 +21,7 @@ private:
     struct PadInfo {
         GstBin* bin;
 
-        SourceConfigDto config;
+        std::shared_ptr<SourceConfigDto> config = nullptr;
         
         std::queue<std::shared_ptr<PipeBranch>> branchQueue;
         std::unordered_map<std::string, std::shared_ptr<PipeBranch>> branches;
@@ -47,7 +47,7 @@ private:
 public:
     PipeTree();
     PipeTree(const std::string &source);
-    PipeTree(const SourceConfigDto& config, std::string &source);
+    PipeTree(std::shared_ptr<SourceConfigDto> config);
     ~PipeTree();
 
     void setSource(const std::string& source);
@@ -56,7 +56,7 @@ public:
     void removeBranch_UNSAFE(const std::string &name);
     void addBranch(std::shared_ptr<PipeBranch> branch);
     GstStateChangeReturn setState(GstState state = GST_STATE_PLAYING); 
-    void setConfig(SourceConfigDto& config);
+    void setConfig(std::shared_ptr<SourceConfigDto> config);
 
     std::unordered_map<std::string, std::shared_ptr<PipeBranch>> getBranches() const;
 
@@ -64,6 +64,7 @@ public:
     bool noMoreBranches() const;
     GstBus* getBus() const;
     GstElement* getPipeline() const;
+    std::shared_ptr<SourceConfigDto> getConfig() const;
 
     void setOnBranchDeleted(const std::function<void(void*)> callback, void* data);
 

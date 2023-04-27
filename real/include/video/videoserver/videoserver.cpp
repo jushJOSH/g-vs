@@ -33,11 +33,11 @@ Videoserver::~Videoserver() {
     g_main_loop_unref(mainLoop);
 }
 
-std::shared_ptr<Source> Videoserver::openSource(const std::string& source) {
-    if (aliveSources.contains(source)) return aliveSources[source];
+std::shared_ptr<Source> Videoserver::openSource(std::shared_ptr<SourceConfigDto> config) {
+    if (aliveSources.contains(config->source_url)) return aliveSources[config->source_url];
 
-    OATPP_LOGD("Videoserver", "created new source %s", source.c_str());
-    auto newSource = std::make_shared<Source>(source);
+    OATPP_LOGD("Videoserver", "created new source %s", config->source_url->c_str());
+    auto newSource = std::make_shared<Source>(config->source_url);
     newSource->setRemoveBranchCallback(onBranchRemoved, new RemoveBranchData {
         newSource.get(),
         &aliveSources
@@ -57,7 +57,7 @@ std::shared_ptr<Source> Videoserver::openSource(const std::string& source) {
         }
     });
     newSource->setState();
-    aliveSources[source] = newSource;
+    aliveSources[config->source_url] = newSource;
         
     return newSource;
 }

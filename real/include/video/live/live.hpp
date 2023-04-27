@@ -3,6 +3,7 @@
 #include <oatpp/core/macro/component.hpp>
 
 #include <api/dto/config.hpp>
+#include <api/dto/sourceconfig.hpp>
 
 #include <video/source/source.hpp>
 #include <video/source/branches/stream.hpp>
@@ -29,7 +30,7 @@ private:
     };
 
 public:
-    LiveHandler(const std::string &sourceUri, const SourceConfigDto& config = default);
+    LiveHandler(int sourceid, std::shared_ptr<SourceConfigDto> config);
     ~LiveHandler();
 
     oatpp::String getPlaylist();
@@ -54,7 +55,7 @@ private:
 
 private:
     OATPP_COMPONENT(std::shared_ptr<Videoserver>, videoserver);
-    OATPP_COMPONENT(oatpp::Object<ConfigDto>, config);
+    OATPP_COMPONENT(oatpp::Object<ConfigDto>, appconfig);
     
     ReadyNotificationBundle bundle;
     std::shared_ptr<HLSConfig> hlsconfig;
