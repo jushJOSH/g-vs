@@ -78,18 +78,15 @@ public:
     // GET FRAME FOR REQUESTED SOURCE OR MEDIA
     ENDPOINT("GET", "/vsapi/frame", getFrame, AUTHORIZATION(std::shared_ptr<JwtPayload>, payload),
                                               QUERIES(QueryParams, QueryParams));
-    // START OR STOP ARCHIVE FOR SOURCE OR MEDIA
-    ENDPOINT("POST", "/vsapi/archive", modifyArchive, AUTHORIZATION(std::shared_ptr<JwtPayload>, payload),
-                                                      BODY_STRING(oatpp::String, mediainfo));
     // GET ARCHIVE FOR SELECTED SOURCE
     ENDPOINT("GET", "/vsapi/archive", getArchive, AUTHORIZATION(std::shared_ptr<JwtPayload>, payload),
                                                   QUERY(oatpp::Int32, source));
     // GET LIVE FOR SELECTED SOURCE OR MEDIA
     ENDPOINT("GET", "/vsapi/live", getLive, AUTHORIZATION(std::shared_ptr<JwtPayload>, payload),
                                             QUERY(oatpp::Int32, source));
-    ENDPOINT("GET", "/vsapi/static/{uuid}/*",  getStatic,
+    ENDPOINT("GET", "/vsapi/static/{source}/*",  getStatic,
              REQUEST(std::shared_ptr<IncomingRequest>, request),
-             PATH(oatpp::String, uuid),
+             PATH(oatpp::Int32, source),
              AUTHORIZATION(std::shared_ptr<JwtPayload>, payload));
 
 // Api stuff
