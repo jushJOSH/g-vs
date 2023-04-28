@@ -4,14 +4,14 @@
 #include <gst/app/app.h>
 
 #include <video/source/datalines/data.hpp>
-#include <api/dto/sourceconfig.hpp>
+#include <api/db/dto/source.hpp>
 
 #include <misc.hpp>
 
 class PipeBranch
 {
 public:
-    PipeBranch(const std::string& sink, const std::string& muxer = "", std::shared_ptr<SourceConfigDto> config = nullptr);
+    PipeBranch(const std::string& sink, const std::string& muxer = "", std::shared_ptr<SourceDto> config = nullptr);
     virtual ~PipeBranch();
 
     // Getters
@@ -54,7 +54,7 @@ protected:
     std::vector<std::shared_ptr<DataLine>> filters;
     std::string uuid;
 
-    std::shared_ptr<SourceConfigDto> config;
+    std::shared_ptr<SourceDto> config;
 
     GstElement* muxer;
     GstElement* sink;

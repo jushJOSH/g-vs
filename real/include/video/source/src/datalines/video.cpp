@@ -15,7 +15,6 @@ using boost::str;
 // TODO pngenc добавить в конфиг
 VideoLine::VideoLine(
     const std::string &encoder,
-    Resolution resolution, 
     int fps, 
     int bitrate)
 :   DataLine(DataLine::LineType::Video, encoder),
@@ -40,6 +39,9 @@ VideoLine::VideoLine(
 
     if (!isLinkedOk)
         throw std::runtime_error("Failed to create videoline");
+
+    updateBitrate(bitrate);
+    updateFramerate(fps);
 
     generateSrcPad();
 }
@@ -97,12 +99,6 @@ VideoLine::~VideoLine() {
 
 void VideoLine::updateBitrate(int bitrate) {
     g_object_set(encoder, "bitrate", bitrate, NULL);
-}
-
-void VideoLine::updateResolution(const std::string &resolution) {
-    auto targetResolution = VideoLine::strToResolution(resolution);
-    g_object_set(videoscale, "width", targetResolution.width, NULL);
-    g_object_set(videoscale, "height", targetResolution.height, NULL);
 }
 
 void VideoLine::updateFramerate(int fps) {

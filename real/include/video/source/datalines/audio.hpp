@@ -12,11 +12,10 @@
 class AudioLine : public DataLine
 {
 public:
-    AudioLine(const std::string& encoder, double quality, double volume);
+    AudioLine(double volume);
     ~AudioLine();
     
     void updateVolume(double volume);
-    void updateQuality(double quality);
     void mute(bool mute);
 
 private:

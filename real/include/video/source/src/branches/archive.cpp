@@ -16,7 +16,7 @@ using boost::str;
 ArchiveBranch::ArchiveBranch(const std::string &path)
 :   PipeBranch(
         "filesink",
-        "mp4mux"
+        "matroskamux"
     )
 {
     OATPP_LOGD("ArchiveBranch", "Created archive branch %s", uuid.c_str());
@@ -25,7 +25,6 @@ ArchiveBranch::ArchiveBranch(const std::string &path)
 
     if (!loadBin())
         throw std::runtime_error("Could not link elements for some reason...");
-
 }
 
 bool ArchiveBranch::loadBin() {

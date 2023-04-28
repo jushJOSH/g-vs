@@ -11,11 +11,9 @@ using boost::format;
 using boost::str;
 
 AudioLine::AudioLine(
-    const std::string& encoder,
-    double quality,
     double volume)
 
-:   DataLine(DataLine::LineType::Audio, encoder),
+:   DataLine(DataLine::LineType::Audio, ""),
     audioconverter(gst_element_factory_make("audioconvert", str(format("%1%_audioconvert") % uuid).c_str())),
     volume(gst_element_factory_make("volume", str(format("%1%_volume") % uuid).c_str()))
 {
@@ -35,6 +33,8 @@ AudioLine::AudioLine(
 
     if (!isLinkedOk)
         throw std::runtime_error("Failed to create audioline");
+
+    updateVolume(volume);
 
     generateSrcPad();
 }
@@ -73,13 +73,6 @@ void AudioLine::updateVolume(double volume) {
     else if (volume < 0.0) volume = 0.0;
 
     g_object_set(this->volume, "volume", volume, NULL);
-}
-
-void AudioLine::updateQuality(double quality) {
-    if (quality > 1.0) quality = 1.0;
-    else if (quality < 0.0) quality = 0.0;
-
-    g_object_set(encoder, "quality", quality, NULL);
 }
 
 void AudioLine::mute(bool mute) {

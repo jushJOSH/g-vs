@@ -13,18 +13,24 @@
 using boost::format;
 using boost::str;
 
-LiveHandler::LiveHandler(int sourceid, std::shared_ptr<SourceConfigDto> config)
-:   source_uri(config->source_url)
+LiveHandler::LiveHandler(int sourceid, std::shared_ptr<SourceDto> config)
+:   source_uri(config->source_url),
+    source_id(sourceid)
 {   
+    this->hlsconfig = std::make_shared<HLSConfig>(appconfig->hlsPath, oatpp::utils::conversion::int32ToStdStr(sourceid), appconfig->hlsSegmentDuration, appconfig->hlsPlaylistLenght, appconfig->bias);
+    
     auto o_source = videoserver->openSource(config);
-    auto hlsPath = str(format("%s/%d") % appconfig->hlsPath->c_str() % sourceid);
-    auto o_branch = o_source->runStream(hlsPath);
+    auto o_branch = o_source->runStream(this->hlsconfig);
 
     this->source_uuid = o_source->getUUID();
     this->branch_uuid = o_branch->getUUID();
 
-    this->hlsconfig = o_source->makeConfig(hlsPath);
-    this->fileManager = std::make_shared<StaticFilesManager>(this->hlsconfig->playlist_folder);
+    try {
+        this->fileManager = std::make_shared<StaticFilesManager>(this->hlsconfig->playlist_folder);
+    } catch (const std::exception& e) {
+        videoserver->removeSource(o_source->getSource());
+        throw std::runtime_error(e.what());
+    }
 
     bundle.issuer = this;
 
@@ -130,4 +136,8 @@ int LiveHandler::getSegmentDuration() const {
 
 GFileMonitor* LiveHandler::getWatchdog() const {
     return hlswatchdog;
+}
+
+int LiveHandler::getSourceId() const {
+    return source_id;
 }

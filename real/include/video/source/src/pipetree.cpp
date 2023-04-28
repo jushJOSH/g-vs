@@ -13,6 +13,10 @@ using boost::format;
 using boost::str;
 
 GstPadProbeReturn PipeTree::branchEosProbe(GstPad* pad, GstPadProbeInfo *info, gpointer user_data) {
+    if (GST_PAD_PROBE_INFO_DATA (info) == NULL) {
+        OATPP_LOGD("PipeTree", "Received event has no data in it (%d)", info->type);
+        return GST_PAD_PROBE_REMOVE;
+    }
     OATPP_LOGD("PipeTree", "Received %s event", gst_event_type_get_name(GST_EVENT_TYPE (GST_PAD_PROBE_INFO_DATA (info))));
     if (GST_EVENT_TYPE (GST_PAD_PROBE_INFO_DATA (info)) != GST_EVENT_EOS)
         return GST_PAD_PROBE_PASS;
@@ -49,7 +53,7 @@ GstPadProbeReturn PipeTree::branchUnlinkProbe(GstPad* pad, GstPadProbeInfo *info
     auto filter = branchdata->branch->getFilters()[branchdata->currIdx];
     auto src = gst_element_get_static_pad (filter->getEncoder(), "src");
     gst_pad_add_probe (src, 
-        (GstPadProbeType)(GST_PAD_PROBE_TYPE_BLOCK | GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM),
+        (GstPadProbeType)(GST_PAD_PROBE_TYPE_IDLE | GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM),
         branchEosProbe, user_data, NULL);
     gst_object_unref (src);
     gst_element_send_event(filter->getEncoder(), gst_event_new_eos());
@@ -124,7 +128,7 @@ PipeTree::PipeTree(const std::string& source)
     setSource(source);
 }
 
-PipeTree::PipeTree(std::shared_ptr<SourceConfigDto> config) 
+PipeTree::PipeTree(std::shared_ptr<SourceDto> config) 
 :   PipeTree(config->source_url)
 {
     setConfig(config);
@@ -183,7 +187,7 @@ GstStateChangeReturn PipeTree::setState(GstState state) {
     return stateResult;
 }
 
-void PipeTree::setConfig(std::shared_ptr<SourceConfigDto> config) {
+void PipeTree::setConfig(std::shared_ptr<SourceDto> config) {
     padinfo.config = config;
 }
 
@@ -208,6 +212,6 @@ void PipeTree::removeBranch_UNSAFE(const std::string &name) {
     padinfo.branches.erase(name);
 }
 
-std::shared_ptr<SourceConfigDto> PipeTree::getConfig() const {
+std::shared_ptr<SourceDto> PipeTree::getConfig() const {
     return this->padinfo.config;
 }

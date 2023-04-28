@@ -9,11 +9,11 @@ void VsapiController::onBranchStop(VsapiController::HandlerRemoveBundle* handler
 
     if (!handlerToDelete->liveStreams->contains(sourceUri)) return;
 
-    OATPP_COMPONENT(std::shared_ptr<Videoserver>, videoserver);
+    auto sourceid_str = oatpp::utils::conversion::int32ToStdStr(handlerToDelete->target->getSourceId());    
     handlerToDelete->liveStreams->erase(sourceUri);
-    handlerToDelete->liveStreams_UUID->erase(handlerToDelete->target->getSourceUUID());
-
-    // Stop timeout timer
+    handlerToDelete->liveStreams_UUID->erase(sourceid_str);
+    
+    // Stop timeout timer   
     if (handlerToDelete->timer != -1)
         g_source_remove(handlerToDelete->timer);
 

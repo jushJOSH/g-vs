@@ -14,11 +14,10 @@
 class VideoLine : public DataLine
 {
 public:
-    VideoLine(const std::string &encoder, Resolution resolution, int fps, int bitrate);
+    VideoLine(const std::string &encoder, int fps, int bitrate);
     ~VideoLine();
 
     void updateBitrate(int bitrate);
-    void updateResolution(const std::string &resolution);
     void updateFramerate(int fps);
     
     static Resolution strToResolution(const std::string &resolution_s, char separator = 'x');

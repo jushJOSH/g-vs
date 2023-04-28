@@ -20,7 +20,7 @@ public:
         : m_basePath(basePath)
     {
         if (!std::filesystem::create_directory(m_basePath->c_str())) {
-            throw std::runtime_error("Could not remove directory " + *m_basePath);
+            throw std::runtime_error("Could not create directory " + *m_basePath);
         }
     }
     ~StaticFilesManager() {

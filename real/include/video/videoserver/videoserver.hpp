@@ -8,7 +8,6 @@
 #include <api/controller/vsapi.hpp>
 #include <api/controller/auth.hpp>
 #include <api/controller/users.hpp>
-#include <api/dto/sourceconfig.hpp>
 
 #include <oatpp/core/base/CommandLineArguments.hpp>
 
@@ -38,7 +37,7 @@ void stopMainLoop();
 
 // Creates source if not exist
 // Gets created source if exists
-std::shared_ptr<Source> openSource(std::shared_ptr<SourceConfigDto> config);
+std::shared_ptr<Source> openSource(std::shared_ptr<SourceDto> config);
 
 // Removes branch from source
 void removeBranchFromSource(const std::string &source, const std::string &branch);

@@ -23,7 +23,7 @@ public:
     void addMedia(const oatpp::Object<MediaDto>& dto);
     void modifyMedia(const oatpp::Object<MediaDto>& dto);
     void removeMedia(const oatpp::Int32 mediaid);
-    void addSource(const oatpp::Object<SourceDto>& sourceDto, const oatpp::Object<SourceDto>& mediaDto);
+    void addSource(const oatpp::Object<SourceDto>& sourceDto, const oatpp::Object<MediaDto>& mediaDto);
     void modifySource(const oatpp::Object<SourceDto>& sourceDto);
     void removeSource(const oatpp::Int32& sourceid);
 

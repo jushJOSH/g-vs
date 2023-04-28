@@ -33,7 +33,7 @@ Videoserver::~Videoserver() {
     g_main_loop_unref(mainLoop);
 }
 
-std::shared_ptr<Source> Videoserver::openSource(std::shared_ptr<SourceConfigDto> config) {
+std::shared_ptr<Source> Videoserver::openSource(std::shared_ptr<SourceDto> config) {
     if (aliveSources.contains(config->source_url)) return aliveSources[config->source_url];
 
     OATPP_LOGD("Videoserver", "created new source %s", config->source_url->c_str());

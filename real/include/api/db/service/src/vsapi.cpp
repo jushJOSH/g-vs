@@ -8,6 +8,9 @@ oatpp::Vector<oatpp::Object<MediaDto>> VsapiService::getMediaByUser(const oatpp:
 
     // Fetch whole vector
     auto receivedData = result->fetch<oatpp::Vector<oatpp::Object<MediaDto>>>();
+    for (auto &elem : *receivedData)
+        elem->sources = getSourceByMedia(elem);
+
     return receivedData;
 }
 
@@ -28,14 +31,21 @@ void VsapiService::changeDefaultSource(oatpp::Int32 newDefaultSource, const oatp
 void VsapiService::addMedia(const oatpp::Object<MediaDto>& dto) {
     auto result = vsapi_database->addMedia(dto);
     OATPP_ASSERT_HTTP(result->isSuccess(), VSTypes::OatStatus::CODE_500, result->getErrorMessage());
-
     // Fetching id
     dto->id = VSMisc::fetchId<MediaDto>(result);
+    
+    for (auto &elem : *(dto->sources))
+        addSource(elem, dto);
 }
 
 void VsapiService::modifyMedia(const oatpp::Object<MediaDto>& dto) {
     auto result = vsapi_database->modifyMedia(dto);
     OATPP_ASSERT_HTTP(result->isSuccess(), VSTypes::OatStatus::CODE_500, result->getErrorMessage());
+
+    for (auto &elem : *(dto->sources)) {
+        OATPP_ASSERT_HTTP(isMediaContainsSource(dto->id, elem->id), VSTypes::OatStatus::CODE_403, "Requested source does not belong to requested media! Check your ID");
+        modifySource(elem);
+    }
 } 
 
 void VsapiService::removeMedia(const oatpp::Int32 mediaid) {
@@ -43,7 +53,7 @@ void VsapiService::removeMedia(const oatpp::Int32 mediaid) {
     OATPP_ASSERT_HTTP(result->isSuccess(), VSTypes::OatStatus::CODE_500, result->getErrorMessage());
 }
 
-void VsapiService::addSource(const oatpp::Object<SourceDto>& sourceDto, const oatpp::Object<SourceDto>& mediaDto) {
+void VsapiService::addSource(const oatpp::Object<SourceDto>& sourceDto, const oatpp::Object<MediaDto>& mediaDto) {
     auto create_result = vsapi_database->addSource(sourceDto);
     OATPP_ASSERT_HTTP(create_result->isSuccess(), VSTypes::OatStatus::CODE_500, create_result->getErrorMessage());
     
@@ -125,15 +135,18 @@ bool VsapiService::isMediaContainsSource(oatpp::Int32 mediaid, oatpp::Int32 sour
 oatpp::Object<SourceDto> VsapiService::getSourceById(oatpp::Int32 sourceid) {
     auto query_result = vsapi_database->getSourceById(sourceid);
     OATPP_ASSERT_HTTP(query_result->isSuccess(), VSTypes::OatStatus::CODE_500, query_result->getErrorMessage());
-    auto receivedSource = query_result->fetch<oatpp::Object<SourceDto>>(1);
+    auto receivedSource = query_result->fetch<oatpp::Vector<oatpp::Object<SourceDto>>>();
+    OATPP_ASSERT_HTTP(receivedSource->size(), VSTypes::OatStatus::CODE_404, "Source not found");
 
-    return receivedSource;
+    return receivedSource[0];
 }
 
 oatpp::Object<MediaDto> VsapiService::getMediaById(oatpp::Int32 mediaid) {
     auto query_result = vsapi_database->getMediaById(mediaid);
     OATPP_ASSERT_HTTP(query_result->isSuccess(), VSTypes::OatStatus::CODE_500, query_result->getErrorMessage());
-    auto receivedMedia = query_result->fetch<oatpp::Object<MediaDto>>(1);
+    auto receivedMedia = query_result->fetch<oatpp::Vector<oatpp::Object<MediaDto>>>();
+    OATPP_ASSERT_HTTP(receivedMedia->size(), VSTypes::OatStatus::CODE_404, "Media not found");
+    receivedMedia[0]->sources = getSourceByMedia(receivedMedia[0]);
 
-    return receivedMedia;
+    return receivedMedia[0];
 }

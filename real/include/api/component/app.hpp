@@ -57,9 +57,6 @@ public:
             config->host = oatpp::String(host.c_str(), host.size());
             config->port = std::stoi(port);
 
-            // TODO remove hardcoded hlsPath
-            config->hlsPath = "/home/egor/hls_test";
-
             // TODO make save config prop
             return config;
         }

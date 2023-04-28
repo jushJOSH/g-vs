@@ -12,7 +12,7 @@ class MediaDto : public oatpp::DTO {
 
     DTO_FIELD(Int32, id);
     DTO_FIELD(String, title);
-    DTO_FIELD(Int32, default_source) = -1;
+    DTO_FIELD(Int32, default_source);
     DTO_FIELD(Vector<oatpp::Object<SourceDto>>, sources);
     DTO_FIELD(String, login);
     DTO_FIELD(String, password);

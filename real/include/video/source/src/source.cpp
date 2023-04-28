@@ -34,7 +34,7 @@ Source::Source(const std::string &source)
     g_object_unref(info);
 }
 
-Source::Source(std::shared_ptr<SourceConfigDto> config)
+Source::Source(std::shared_ptr<SourceDto> config)
 :   Source(config->source_url)
 {
     sourceElements->setConfig(config);
@@ -49,7 +49,7 @@ Source::~Source() {
     g_object_unref(bus);
 }
 
-void Source::setConfig(std::shared_ptr<SourceConfigDto> config) {
+void Source::setConfig(std::shared_ptr<SourceDto> config) {
     sourceElements->setConfig(config);
 }
 
@@ -57,16 +57,11 @@ std::string Source::getUUID() const {
     return uuid;
 }
 
-std::shared_ptr<StreamBranch> Source::runStream(const std::string &hlsFolder) {
-    auto config = makeConfig(hlsFolder);
+std::shared_ptr<StreamBranch> Source::runStream(std::shared_ptr<HLSConfig> config) {
     auto streamBranch = std::make_shared<StreamBranch>(config, !isLive);
     sourceElements->addBranch(streamBranch);
 
     return streamBranch;
-}
-
-std::shared_ptr<HLSConfig> Source::makeConfig(const std::string &hlsFolder, int playlistLenght, int bias) {
-    return std::make_shared<HLSConfig>(hlsFolder, this->uuid, playlistLenght, bias);
 }
 
 std::shared_ptr<ArchiveBranch> Source::runArchive(const std::string &path) {

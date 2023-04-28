@@ -24,7 +24,7 @@ class VsapiController : public oatpp::web::server::api::ApiController {
 private:
     struct HandlerRemoveBundle {
         std::shared_ptr<LiveHandler> target;
-        guint timer;
+        guint timer = -1;
         int unreadyAttempt = 0;
         int maxAttempt = 3;
 
@@ -67,23 +67,20 @@ public:
     // DELETE MEDIA ENDPOINT (with sources!)
     ENDPOINT("DELETE", "/vsapi/media/{media}", deleteMedia, AUTHORIZATION(std::shared_ptr<JwtPayload>, payload),
                                                             PATH(oatpp::Int32, media));
-    ENDPOINT("PUT", "/vsapi/media/{media}/source/{source}", modifySource, AUTHORIZATION(std::shared_ptr<JwtPayload>, payload),
-                                                                          PATH(oatpp::Int32, source),
-                                                                          PATH(oatpp::Int32, media),
-                                                                          BODY_STRING(oatpp::String, sourceinfo));
-    // DELETE SOURCE ENDPOINT (single source)
-    ENDPOINT("DELETE", "/vsapi/media/{media}/source/{source}", deleteSource, AUTHORIZATION(std::shared_ptr<JwtPayload>, payload),
-                                                                             PATH(oatpp::Int32, source),
-                                                                             PATH(oatpp::Int32, media));
-    // GET FRAME FOR REQUESTED SOURCE OR MEDIA
-    ENDPOINT("GET", "/vsapi/frame", getFrame, AUTHORIZATION(std::shared_ptr<JwtPayload>, payload),
-                                              QUERIES(QueryParams, QueryParams));
-    // GET ARCHIVE FOR SELECTED SOURCE
-    ENDPOINT("GET", "/vsapi/archive", getArchive, AUTHORIZATION(std::shared_ptr<JwtPayload>, payload),
-                                                  QUERY(oatpp::Int32, source));
+    // ENDPOINT("PUT", "/vsapi/media/{media}/source/{source}", modifySource, AUTHORIZATION(std::shared_ptr<JwtPayload>, payload),
+    //                                                                       PATH(oatpp::Int32, source),
+    //                                                                       PATH(oatpp::Int32, media),
+    //                                                                       BODY_STRING(oatpp::String, sourceinfo));
+    // // DELETE SOURCE ENDPOINT (single source)
+    // ENDPOINT("DELETE", "/vsapi/media/{media}/source/{source}", deleteSource, AUTHORIZATION(std::shared_ptr<JwtPayload>, payload),
+    //                                                                          PATH(oatpp::Int32, source),
+    //                                                                          PATH(oatpp::Int32, media));
+    // // GET FRAME FOR REQUESTED SOURCE OR MEDIA
+    // ENDPOINT("GET", "/vsapi/frame", getFrame, AUTHORIZATION(std::shared_ptr<JwtPayload>, payload),
+    //                                           QUERIES(QueryParams, QueryParams));
     // GET LIVE FOR SELECTED SOURCE OR MEDIA
-    ENDPOINT("GET", "/vsapi/live", getLive, AUTHORIZATION(std::shared_ptr<JwtPayload>, payload),
-                                            QUERY(oatpp::Int32, source));
+    ENDPOINT("GET", "/vsapi/live", getLive, QUERY(oatpp::Int32, source),
+                                            AUTHORIZATION(std::shared_ptr<JwtPayload>, payload));
     ENDPOINT("GET", "/vsapi/static/{source}/*",  getStatic,
              REQUEST(std::shared_ptr<IncomingRequest>, request),
              PATH(oatpp::Int32, source),
@@ -102,6 +99,9 @@ private:
 
     // Map of SOURCE(UUID) -> LiveHandler
     std::unordered_map<std::string, std::shared_ptr<LiveHandler>> liveStreams_UUID;
+
+    // Running archives (where int - sourceid, pair.first = source.uri, pair.second = branch.uuid)
+    std::unordered_map<int, std::pair<std::string, std::string>> runningArchives;
 };
 
 #include OATPP_CODEGEN_END(ApiController) 

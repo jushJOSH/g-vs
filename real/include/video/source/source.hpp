@@ -28,29 +28,27 @@ public:
     // Test consturctor for source
     Source();
     Source(const std::string& source);
-    Source(std::shared_ptr<SourceConfigDto> config);
+    Source(std::shared_ptr<SourceDto> config);
     ~Source();
 
     // Get/Set things
     std::string getUUID() const;
     std::string getSource() const;
     GstStateChangeReturn setState(GstState state = GST_STATE_PLAYING);
-    void setConfig(std::shared_ptr<SourceConfigDto> config);
+    void setConfig(std::shared_ptr<SourceDto> config);
     bool isEmpty() const;
     void setRemoveBranchCallback(const std::function<void(void*)> callback, void* data);
     PipeTree* getPipeTree_UNSAFE() const;
 
     // Branch management
     // Stream
-    std::shared_ptr<StreamBranch> runStream(const std::string &hlsFolder);
+    std::shared_ptr<StreamBranch> runStream(std::shared_ptr<HLSConfig> config);
 
     // Archive
     std::shared_ptr<ArchiveBranch> runArchive(const std::string &path);
     
     void removeBranch(const std::string& branchid);
     gulong addBusCallback(const std::string &message, BusCallbackData data);
-
-    std::shared_ptr<HLSConfig> makeConfig(const std::string &hlsFolder, int playlistLenght = 4, int bias = 10);
 
 protected:
     bool isLive;

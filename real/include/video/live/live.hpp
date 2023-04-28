@@ -3,7 +3,6 @@
 #include <oatpp/core/macro/component.hpp>
 
 #include <api/dto/config.hpp>
-#include <api/dto/sourceconfig.hpp>
 
 #include <video/source/source.hpp>
 #include <video/source/branches/stream.hpp>
@@ -30,7 +29,7 @@ private:
     };
 
 public:
-    LiveHandler(int sourceid, std::shared_ptr<SourceConfigDto> config);
+    LiveHandler(int sourceid, std::shared_ptr<SourceDto> config);
     ~LiveHandler();
 
     oatpp::String getPlaylist();
@@ -45,6 +44,7 @@ public:
 
     std::string getSourceUUID() const;
     std::string getSourceUri() const;
+    int getSourceId() const;
     std::string getBranchUUID() const;
     GFileMonitor* getWatchdog() const;
 
@@ -58,14 +58,15 @@ private:
     OATPP_COMPONENT(oatpp::Object<ConfigDto>, appconfig);
     
     ReadyNotificationBundle bundle;
-    std::shared_ptr<HLSConfig> hlsconfig;
     
     GFileMonitor *hlswatchdog;
 
+    int source_id;
     std::string source_uri;
     std::string source_uuid;
     std::string branch_uuid;
     std::shared_ptr<StaticFilesManager> fileManager;
+    std::shared_ptr<HLSConfig> hlsconfig;
     
     timestamp lastSegmentRequest;
 };
