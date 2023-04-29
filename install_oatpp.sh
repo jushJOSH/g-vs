@@ -44,10 +44,11 @@ function install_module() {
 
 ##########################################################
 
-install_module $BUILD_TYPE oatpp
-install_module $BUILD_TYPE oatpp-swagger
+# install_module $BUILD_TYPE oatpp
+# install_module $BUILD_TYPE oatpp-swagger
 # install_module $BUILD_TYPE oatpp-sqlite
-install_module $BUILD_TYPE oatpp-postgresql
+# install_module $BUILD_TYPE oatpp-postgresql
+ install_module $BUILD_TYPE oatpp-openssl
 
 cd ../
 rm -rf tmp

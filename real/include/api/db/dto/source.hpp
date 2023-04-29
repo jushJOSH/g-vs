@@ -14,6 +14,8 @@ class SourceDto : public oatpp::DTO {
     // TODO make available
     // DTO_FIELD(String, cache_mode) = "none"; TEMP UNAVAILABLE
     DTO_FIELD(String, source_url);
+    DTO_FIELD(String, login);
+    DTO_FIELD(String, password);
 
     // Videoline settings
     DTO_FIELD(Int32, fps) = 15;

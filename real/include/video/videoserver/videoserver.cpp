@@ -6,6 +6,8 @@
 #include <api/component/database.hpp>
 #include <api/component/service.hpp>
 
+#include <boost/regex.hpp>
+
 Videoserver::Accelerator Videoserver::accelerator = Videoserver::Accelerator::CPU;
 
 Videoserver::Videoserver(Accelerator accelerator) 

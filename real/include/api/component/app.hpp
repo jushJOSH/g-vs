@@ -10,6 +10,7 @@
 #include <video/videoserver/videoserver.hpp>
 
 #include <cstdlib>
+#include <filesystem>
 
 class AppComponent {
 // Inner vars
@@ -20,21 +21,28 @@ private:
 public:
     // Regular consturctor with cmd args
     AppComponent(const oatpp::base::CommandLineArguments& cmdArgs)
-    : m_cmdArgs(cmdArgs)
+    :   m_cmdArgs(cmdArgs)
     {}
-
+    
 public:
+    // Create serializer/deserializer mapper
+    OATPP_CREATE_COMPONENT(std::shared_ptr<oatpp::data::mapping::ObjectMapper>, objectMapper)([] {
+        auto mapper = oatpp::parser::json::mapping::ObjectMapper::createShared();
+        mapper->getSerializer()->getConfig()->useBeautifier = true;
+        mapper->getSerializer()->getConfig()->escapeFlags = 0;
+        return mapper;
+    }());
+
     // Reading config from config file
     // [this] for passing class fields
     OATPP_CREATE_COMPONENT(oatpp::Object<ConfigDto>, config)([this] {
-        if (!m_cmdArgs.hasArgument("--config") 
-            && !m_cmdArgs.hasArgument("--pguri"))
-        {
-            OATPP_LOGE("AppComponent", "Can't retrieve config.");
-            //throw std::runtime_error("Can't retreive config");
+        OATPP_COMPONENT(std::shared_ptr<oatpp::data::mapping::ObjectMapper>, objectMapper);
+        if (m_cmdArgs.hasArgument("--make-default")) {
+            auto defaultCfg = ConfigDto::createShared();
+            auto configString = objectMapper->writeToString(defaultCfg);
+            configString.saveToFile("videoserver.config.default");
+            OATPP_LOGI("App Component", "Created default config 'videoserver.config.default'");
         }
-
-        auto objectMapper = oatpp::parser::json::mapping::ObjectMapper::createShared();
         
         // Making config actualy
         std::string cfgPath = m_cmdArgs.getNamedArgumentValue("--config", "");
@@ -45,24 +53,33 @@ public:
             return parsed;
         }
 
-        std::string host = m_cmdArgs.getNamedArgumentValue("--host", "0.0.0.0");
-        std::string port = m_cmdArgs.getNamedArgumentValue("--port", "8080");
+        // Create new config
+        auto config = ConfigDto::createShared();
 
-        // TODO remove hardcoded dblink
-        //postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]
-        std::string pgUri = m_cmdArgs.getNamedArgumentValue("--pguri", "postgresql://videoserver:31337@192.168.0.6/videoserver");
-        if (!pgUri.empty()) {
-            auto config = ConfigDto::createShared();
-            config->dbConnectionString = oatpp::String(pgUri.c_str(), pgUri.size());
-            config->host = oatpp::String(host.c_str(), host.size());
-            config->port = std::stoi(port);
+        config->host = m_cmdArgs.getNamedArgumentValue("--host", "0.0.0.0");
+        config->port = std::stoi(m_cmdArgs.getNamedArgumentValue("--port", "8080"));
+        if (!m_cmdArgs.hasArgument("--pguri"))
+            throw std::runtime_error("'--pguri' not specified!");
+        config->dbConnectionString = m_cmdArgs.getNamedArgumentValue("--pguri", "");
 
-            // TODO make save config prop
-            return config;
+        if (!m_cmdArgs.hasArgument("--cert") ||
+            !m_cmdArgs.hasArgument("--key") || 
+            !m_cmdArgs.hasArgument("--df"))
+        {
+            OATPP_LOGW("App Component", "Server will be started INSECURE mode! Specify path to cert, key and Diffie-Hellman parameters using '--cert', '--key', '--df'")
+        } else {
+            config->apiCert = m_cmdArgs.getNamedArgumentValue("--cert", "");
+            config->apiDiffieHellman = m_cmdArgs.getNamedArgumentValue("--df", "");
+            config->apiKey = m_cmdArgs.getNamedArgumentValue("--key", "");
         }
 
-        OATPP_LOGE("AppComponent", "--pguri not specified.");
-        throw std::runtime_error("--pguri not specified");
+        if (!m_cmdArgs.hasArgument("--token-salt")) {
+            OATPP_LOGE("App Component", "Not specified '--token-salt' parameter. Specify PATH to salt file. File can contain any information");
+            throw std::runtime_error("No token salt in config");
+        } else 
+            config->tokenSalt = m_cmdArgs.getNamedArgumentValue("--token-salt", "");
+
+        return config;
     }()); 
 
     OATPP_CREATE_COMPONENT(std::shared_ptr<JWT>, jwt)([]{
@@ -75,13 +92,8 @@ public:
     }());
 
     OATPP_CREATE_COMPONENT(std::shared_ptr<Videoserver>, videoserver)([]{
-        OATPP_COMPONENT(oatpp::Object<ConfigDto>, config);
-
         std::shared_ptr<Videoserver> videoserver = std::make_shared<Videoserver>();
-        auto accelerator = config->hardware_acceleration.getValue("cpu");
-        if (accelerator == "amd") videoserver->accelerator = Videoserver::Accelerator::AMD;
-        if (accelerator == "nvidia") videoserver->accelerator = Videoserver::Accelerator::NVIDIA;
-        if (accelerator == "cpu") videoserver->accelerator = Videoserver::Accelerator::CPU;        
+        videoserver->accelerator = Videoserver::Accelerator::CPU;        
 
         return videoserver;
     }());

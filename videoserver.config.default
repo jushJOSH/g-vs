@@ -1,0 +1,14 @@
+{
+  "host": "0.0.0.0",
+  "port": 8080,
+  "dbConnectionString": null,
+  "hlsBias": 6,
+  "hlsPlaylistLenght": 4,
+  "hlsSegmentDuration": 4,
+  "hlsPath": "/home/egor/hls_test",
+  "tokenSalt": null,
+  "issuer": "vs:jwt-issuer",
+  "apiCert": null,
+  "apiKey": null,
+  "apiDiffieHellman": null
+}

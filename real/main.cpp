@@ -22,13 +22,26 @@ void runApi() {
         router->addController(VsapiController::createShared());
 
         /* create server */
+        std::shared_ptr<oatpp::network::Server> server;
+        if (serviceComponent.secureConnectionProvider.getObject() == nullptr) {
+            server = std::make_shared<oatpp::network::Server>(
+                serviceComponent.serverConnectionProvider.getObject(),
+                serviceComponent.serverConnectionHandler.getObject()
+            );
+            OATPP_LOGW("API ROOT", "Server running insecure!");
+        } else {
+            server = std::make_shared<oatpp::network::Server>(
+                serviceComponent.secureConnectionProvider.getObject(),
+                serviceComponent.serverConnectionHandler.getObject()
+            );
+        }
 
-        oatpp::network::Server server(serviceComponent.serverConnectionProvider.getObject(),
-                                        serviceComponent.serverConnectionHandler.getObject());
-
-        OATPP_LOGD("Server", "Running on port %s...", serviceComponent.serverConnectionProvider.getObject()->getProperty("port").toString()->c_str());
-
-        server.run();
+        OATPP_COMPONENT(oatpp::Object<ConfigDto>, config);
+        OATPP_LOGI("API ROOT", "API is running on %s:%d...", 
+            config->host->c_str(),
+            *(config->port)
+        );
+        server->run();
     });
 
     serverThread.detach();
@@ -36,7 +49,7 @@ void runApi() {
 
 void runVideo() {
     OATPP_COMPONENT(std::shared_ptr<Videoserver>, videoserver);
-    OATPP_LOGD("Video", "Video loop is running");
+    OATPP_LOGD("VIDEO API", "VIDEO is running...");
     videoserver->runMainLoop();
     videoserver->stopMainLoop();
 }

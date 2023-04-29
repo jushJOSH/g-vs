@@ -72,8 +72,8 @@ public:
     PARAM(oatpp::Int32, media_id))
 
     QUERY(addMedia,
-    "INSERT INTO media(title, default_source, owner, login, password)"
-    " VALUES(:media.title, :media.default_source, :media.owner, :media.login, :media.password)"
+    "INSERT INTO media(title, default_source, owner)"
+    " VALUES(:media.title, :media.default_source, :media.owner)"
     " RETURNING id;",
     PARAM(oatpp::Object<MediaDto>, media))
 
@@ -83,8 +83,8 @@ public:
     PARAM(oatpp::Int32, id))
 
     QUERY(addSource,
-    "INSERT INTO source(source_url, fps, videoencoding, bitrate, mute, volume)"
-    " VALUES(:source.source_url, :source.fps, :source.videoencoding, :source.bitrate, :source.mute, :source.volume)"
+    "INSERT INTO source(source_url, login, password, fps, videoencoding, bitrate, mute, volume)"
+    " VALUES(:source.source_url, :source.login, :source.password, :source.fps, :source.videoencoding, :source.bitrate, :source.mute, :source.volume)"
     " RETURNING id;",
     PARAM(oatpp::Object<SourceDto>, source))
 
@@ -106,8 +106,6 @@ public:
         " title text COLLATE pg_catalog.\"default\","
         " default_source integer,"
         " owner integer NOT NULL,"
-        " login text COLLATE pg_catalog.\"default\","
-        " password text COLLATE pg_catalog.\"default\","
         " CONSTRAINT media_pkey PRIMARY KEY (id),"
         " CONSTRAINT media_default_source UNIQUE (default_source),"
         " CONSTRAINT f_owner FOREIGN KEY (owner)"
@@ -127,13 +125,13 @@ public:
     "("
         " id integer NOT NULL GENERATED ALWAYS AS IDENTITY ( CYCLE INCREMENT 1 START 0 MINVALUE 0 MAXVALUE 2147483647 CACHE 1 ),"
         " source_url text COLLATE pg_catalog.\"default\" NOT NULL,"
+        " login text COLLATE pg_catalog.\"default\","
+        " password text COLLATE pg_catalog.\"default\","
         " cache_mode text COLLATE pg_catalog.\"default\" NOT NULL,"
         " fps integer NOT NULL,"
-        " resolution text COLLATE pg_catalog.\"default\" NOT NULL,"
         " videoencoding text COLLATE pg_catalog.\"default\" NOT NULL,"
         " bitrate integer NOT NULL,"
         " mute boolean NOT NULL,"
-        " quality double precision NOT NULL,"
         " volume double precision NOT NULL,"
         " CONSTRAINT \"Source_pkey\" PRIMARY KEY (id)"
     ")")
@@ -160,13 +158,13 @@ public:
 
     QUERY(modifyMedia,
     "UPDATE media"
-    " SET title=:media.title, default_source=:media.default_source, owner=:media.owner, login=:media.login, password=:media.password"
+    " SET title=:media.title, default_source=:media.default_source, owner=:media.owner"
     " WHERE id=:media.id;",
     PARAM(oatpp::Object<MediaDto>, media));
 
     QUERY(modifySource,
     "UPDATE source"
-    " SET source_url=:source.source_url, fps=:source.fps, videoencoding=:source.videoencoding, bitrate=:source.bitrate, mute=:source.mute, volume=:source.volume"
+    " SET source_url=:source.source_url, login=:source.login, password=:source.password, fps=:source.fps, videoencoding=:source.videoencoding, bitrate=:source.bitrate, mute=:source.mute, volume=:source.volume"
     " WHERE id=:source.id;",
     PARAM(oatpp::Object<SourceDto>, source))
 };

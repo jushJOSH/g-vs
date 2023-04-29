@@ -17,6 +17,7 @@ pkg_check_modules(GST_PBUTILS REQUIRED gstreamer-pbutils-1.0)
 find_package(oatpp          1.3.0 REQUIRED)
 find_package(oatpp-swagger  1.3.0 REQUIRED)
 find_package(oatpp-postgresql 1.3.0 REQUIRED)
+find_package(oatpp-openssl 1.3.0 REQUIRED)
 find_package(Threads REQUIRED)
 find_package(jwt-cpp REQUIRED)
 
@@ -42,4 +43,4 @@ set(SOURCES
 # Добавление исходных файлов и подключаемых директорий
 add_executable(${PROJECT_NAME} ${SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${GST_INCLUDE_DIRS} ${GLIB_INCLUDE_DIRS} ${GST_APP_INCLUDE_DIRS} ${JSON_INCLUDE_DIRS} ${GIO_INCLUDE_DIRS} ${GST_PBUTILS_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${GST_LIBRARIES} ${GLIB_LIBRARIES} ${GST_APP_LIBRARIES} ${JSON_LIBRARIES} ${GIO_LIBRARIES} ${GST_PBUTILS_LIBRARIES} oatpp::oatpp oatpp::oatpp-swagger oatpp::oatpp-postgresql Threads::Threads jwt-cpp::jwt-cpp)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${GST_LIBRARIES} ${GLIB_LIBRARIES} ${GST_APP_LIBRARIES} ${JSON_LIBRARIES} ${GIO_LIBRARIES} ${GST_PBUTILS_LIBRARIES} oatpp::oatpp oatpp::oatpp-swagger oatpp::oatpp-postgresql oatpp::oatpp-openssl Threads::Threads jwt-cpp::jwt-cpp)

@@ -17,7 +17,7 @@ LiveHandler::LiveHandler(int sourceid, std::shared_ptr<SourceDto> config)
 :   source_uri(config->source_url),
     source_id(sourceid)
 {   
-    this->hlsconfig = std::make_shared<HLSConfig>(appconfig->hlsPath, oatpp::utils::conversion::int32ToStdStr(sourceid), appconfig->hlsSegmentDuration, appconfig->hlsPlaylistLenght, appconfig->bias);
+    this->hlsconfig = std::make_shared<HLSConfig>(appconfig->hlsPath, oatpp::utils::conversion::int32ToStdStr(sourceid), appconfig->hlsSegmentDuration, appconfig->hlsPlaylistLenght, appconfig->hlsBias);
     
     auto o_source = videoserver->openSource(config);
     auto o_branch = o_source->runStream(this->hlsconfig);

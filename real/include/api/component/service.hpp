@@ -12,16 +12,12 @@
 #include <oatpp/parser/json/mapping/ObjectMapper.hpp>
 #include <oatpp/core/macro/component.hpp>
 
+#include <oatpp-openssl/server/ConnectionProvider.hpp>
+#include <oatpp-openssl/configurer/TemporaryDhParamsFile.hpp>
+#include <oatpp-openssl/Config.hpp>
+
 class ServiceComponent {
 public:
-    // Create serializer/deserializer mapper
-    OATPP_CREATE_COMPONENT(std::shared_ptr<oatpp::data::mapping::ObjectMapper>, apiObjectMapper)([] {
-        auto mapper = oatpp::parser::json::mapping::ObjectMapper::createShared();
-        mapper->getSerializer()->getConfig()->useBeautifier = true;
-        mapper->getSerializer()->getConfig()->escapeFlags = 0;
-        return mapper;
-    }());
-    
     // TODO add to config usage of extended client info
     // Create connection provider on specific host:port
     OATPP_CREATE_COMPONENT(std::shared_ptr<oatpp::network::ServerConnectionProvider>, serverConnectionProvider)([] {
@@ -29,6 +25,20 @@ public:
         return oatpp::network::tcp::server::ConnectionProvider::createShared({config->host, config->port, oatpp::network::Address::IP_4}, true);
     }());
     
+    OATPP_CREATE_COMPONENT(std::shared_ptr<oatpp::openssl::server::ConnectionProvider>, secureConnectionProvider)([]()->std::shared_ptr<oatpp::openssl::server::ConnectionProvider> {
+        OATPP_COMPONENT(oatpp::Object<ConfigDto>, config); // Get config component
+        if (config->apiCert.getValue("") == "" || config->apiKey.getValue("") == "")
+            return nullptr;
+        auto connectionConfig = oatpp::openssl::Config::createDefaultServerConfigShared(config->apiCert, config->apiKey);
+        if (config->apiDiffieHellman.getValue("") != "")
+            connectionConfig->addContextConfigurer(
+                std::make_shared<oatpp::openssl::configurer::TemporaryDhParamsFile>(config->apiDiffieHellman)
+            );
+
+        OATPP_COMPONENT(std::shared_ptr<oatpp::network::ServerConnectionProvider>, serverConnectionProvider);
+        return oatpp::openssl::server::ConnectionProvider::createShared(connectionConfig, serverConnectionProvider);
+    }());
+
     // Create HTTP Router component
     OATPP_CREATE_COMPONENT(std::shared_ptr<oatpp::web::server::HttpRouter>, httpRouter)([] {
         return oatpp::web::server::HttpRouter::createShared();
