@@ -29,9 +29,9 @@ public:
 
 // Endpoints
 public:
-    ENDPOINT("POST", "/user/new", makeUser, BODY_STRING(oatpp::String, userinfo));
-    ENDPOINT("PUT", "/user/edit", editUser, BODY_STRING(oatpp::String, userinfo), AUTHORIZATION(std::shared_ptr<JwtPayload>, payload));
-    ENDPOINT("DELETE", "/user/delete", deleteUser, AUTHORIZATION(std::shared_ptr<JwtPayload>, payload));
+    ENDPOINT("POST", "/user", makeUser, BODY_STRING(oatpp::String, userinfo));
+    ENDPOINT("PUT", "/user", editUser, BODY_STRING(oatpp::String, userinfo), AUTHORIZATION(std::shared_ptr<JwtPayload>, payload));
+    ENDPOINT("DELETE", "/user", deleteUser, AUTHORIZATION(std::shared_ptr<JwtPayload>, payload));
 
 // Users Client
 private:
