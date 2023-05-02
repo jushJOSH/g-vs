@@ -32,7 +32,6 @@ public:
 private:
     void createMediaIfNotExists();
     void createSourceIfNotExists();
-    void createMedia_SourceIfNotExists();
 
     // Injecting database component
     OATPP_COMPONENT(std::shared_ptr<VsapiClient>, vsapi_database);

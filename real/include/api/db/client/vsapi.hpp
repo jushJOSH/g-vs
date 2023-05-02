@@ -18,8 +18,7 @@ public:
     QUERY(getMediaByUser,
     "SELECT media.*"
     " FROM media" 
-    " LEFT JOIN users ON media.owner = users.id" 
-    " LEFT JOIN auth ON users.id = auth.user" 
+    " LEFT JOIN auth ON media.owner = auth.user" 
     " WHERE auth.auth_token=:auth_token;",
     PARAM(oatpp::String, auth_token))
 
@@ -32,24 +31,21 @@ public:
     QUERY(isSourceBelongsToUser,
     "SELECT source.id"
     " FROM source"
-    " LEFT JOIN media_source ON media_source.source_id = source.id"
-    " LEFT JOIN media ON media_source.media_id = media.id"
+    " LEFT JOIN media ON media.id = source.media"
     " WHERE media.owner = :owner_id",
     PARAM(oatpp::Int32, owner_id))
 
     QUERY(isMediaHasSource,
     "SELECT source.*"
     " FROM source"
-    " LEFT JOIN media_source ON media_source.source_id = source.id"
-    " WHERE media_source.media_id = :media_id AND media_source.source_id = :source_id",
+    " WHERE source.media = :media_id AND source.id = :source_id;",
     PARAM(oatpp::Int32, media_id),
     PARAM(oatpp::Int32, source_id))
 
     QUERY(getSourceByMedia,
     "SELECT source.*"
     " FROM source" 
-    " LEFT JOIN media_source ON source.id = source_id" 
-    " WHERE media_source.media_id = :media_id;",
+    " WHERE source.media = :media_id;",
     PARAM(oatpp::Int32, media_id))
 
     QUERY(getSourceById,
@@ -83,14 +79,15 @@ public:
     PARAM(oatpp::Int32, id))
 
     QUERY(addSource,
-    "INSERT INTO source(source_url, login, password, fps, videoencoding, bitrate, mute, volume)"
-    " VALUES(:source.source_url, :source.login, :source.password, :source.fps, :source.videoencoding, :source.bitrate, :source.mute, :source.volume)"
+    "INSERT INTO source(source_url, login, password, fps, videoencoding, bitrate, mute, volume, media)"
+    " VALUES(:source.source_url, :source.login, :source.password, :source.fps, :source.videoencoding, :source.bitrate, :source.mute, :source.volume, :source.media)"
     " RETURNING id;",
     PARAM(oatpp::Object<SourceDto>, source))
 
     QUERY(linkMediaSource,
-    "INSERT INTO media_source(media_id, source_id)"
-    " VALUES(:media_id, :source_id);",
+    "UPDATE source"
+    " SET media=:media_id"
+    " WHERE id=:source_id;",
     PARAM(oatpp::Int32, media_id),
     PARAM(oatpp::Int32, source_id))
 
@@ -123,34 +120,20 @@ public:
     QUERY(createSourceIfNotExists,
     "CREATE TABLE IF NOT EXISTS public.source"
     "("
+        
         " id integer NOT NULL GENERATED ALWAYS AS IDENTITY ( CYCLE INCREMENT 1 START 0 MINVALUE 0 MAXVALUE 2147483647 CACHE 1 ),"
         " source_url text COLLATE pg_catalog.\"default\" NOT NULL,"
-        " login text COLLATE pg_catalog.\"default\","
-        " password text COLLATE pg_catalog.\"default\","
-        " cache_mode text COLLATE pg_catalog.\"default\" NOT NULL,"
         " fps integer NOT NULL,"
         " videoencoding text COLLATE pg_catalog.\"default\" NOT NULL,"
         " bitrate integer NOT NULL,"
         " mute boolean NOT NULL,"
         " volume double precision NOT NULL,"
-        " CONSTRAINT \"Source_pkey\" PRIMARY KEY (id)"
-    ")")
-
-    QUERY(createMedia_SourceIfNotExists,
-    "CREATE TABLE IF NOT EXISTS public.media_source"
-    "("
-        " id integer NOT NULL GENERATED ALWAYS AS IDENTITY ( CYCLE INCREMENT 1 START 0 MINVALUE 0 MAXVALUE 2147483647 CACHE 1 ),"
-        " media_id integer NOT NULL,"
-        " source_id integer NOT NULL,"
-        " CONSTRAINT media_source_pkey PRIMARY KEY (id),"
-        " CONSTRAINT u_source_id UNIQUE (source_id),"
-        " CONSTRAINT f_media FOREIGN KEY (media_id)"
+        " login text COLLATE pg_catalog.\"default\","
+        " password text COLLATE pg_catalog.\"default\","
+        " media integer NOT NULL,"
+        " CONSTRAINT \"Source_pkey\" PRIMARY KEY (id),"
+        " CONSTRAINT source_media_fkey FOREIGN KEY (media)"
             " REFERENCES public.media (id) MATCH SIMPLE"
-            " ON UPDATE NO ACTION"
-            " ON DELETE CASCADE"
-            " NOT VALID,"
-        " CONSTRAINT f_source FOREIGN KEY (source_id)"
-            " REFERENCES public.source (id) MATCH SIMPLE"
             " ON UPDATE NO ACTION"
             " ON DELETE CASCADE"
             " NOT VALID"
@@ -158,7 +141,7 @@ public:
 
     QUERY(modifyMedia,
     "UPDATE media"
-    " SET title=:media.title, default_source=:media.default_source, owner=:media.owner"
+    " SET title=:media.title, default_source=:media.default_source"
     " WHERE id=:media.id;",
     PARAM(oatpp::Object<MediaDto>, media));
 

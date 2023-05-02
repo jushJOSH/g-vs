@@ -54,6 +54,7 @@ void VsapiService::removeMedia(const oatpp::Int32 mediaid) {
 }
 
 void VsapiService::addSource(const oatpp::Object<SourceDto>& sourceDto, const oatpp::Object<MediaDto>& mediaDto) {
+    sourceDto->media = mediaDto->id;
     auto create_result = vsapi_database->addSource(sourceDto);
     OATPP_ASSERT_HTTP(create_result->isSuccess(), VSTypes::OatStatus::CODE_500, create_result->getErrorMessage());
     
@@ -85,19 +86,12 @@ void VsapiService::createSourceIfNotExists() {
     OATPP_ASSERT_HTTP(result_source->isSuccess(), VSTypes::OatStatus::CODE_500, result_source->getErrorMessage());
 }
 
-void VsapiService::createMedia_SourceIfNotExists() {
-    auto result_media_source = vsapi_database->createMedia_SourceIfNotExists();
-    OATPP_ASSERT_HTTP(result_media_source->isSuccess(), VSTypes::OatStatus::CODE_500, result_media_source->getErrorMessage());
-}
-
 void VsapiService::initVsapiTable() {
     // Important order!
-    // Media & Media_Source has f_key to source -> Source #1
-    // Media_Source has f_key to media -> Media #2
-    // Media_Source #3
-    createSourceIfNotExists();
+    // Media #1
+    // Source #2
     createMediaIfNotExists();
-    createMedia_SourceIfNotExists();
+    createSourceIfNotExists();
 }
 
 bool VsapiService::isMediaBelongsToUser(oatpp::Int32 mediaid, oatpp::Int32 userid) {

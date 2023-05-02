@@ -16,6 +16,7 @@ class SourceDto : public oatpp::DTO {
     DTO_FIELD(String, source_url);
     DTO_FIELD(String, login);
     DTO_FIELD(String, password);
+    DTO_FIELD(Int32, media);
 
     // Videoline settings
     DTO_FIELD(Int32, fps) = 15;
