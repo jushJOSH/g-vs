@@ -19,7 +19,7 @@ enum class Accelerator {
 };
 
 struct RemoveBranchData {
-    Source *targetSource;
+    std::shared_ptr<Source> targetSource;
     std::unordered_map<std::string, std::shared_ptr<Source>> *allSources;
 };
 
@@ -51,7 +51,8 @@ static Accelerator accelerator;
 
 private:
     static void onBranchRemoved(void* data);
-    static bool onSourceStop(GstBus *bus, GstMessage *message, gpointer data);
+    static void onSourceStop(GstBus *bus, GstMessage *message, gpointer data);
+    static std::string authURI(const std::string &uri, const std::string &login, const std::string &password);
 
 private:
 // --- GStreamer params ---

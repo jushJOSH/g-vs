@@ -6,7 +6,13 @@
 #include <api/component/database.hpp>
 #include <api/component/service.hpp>
 
-#include <boost/regex.hpp>
+#include <boost/format.hpp>
+#include <boost/algorithm/string.hpp>
+
+#include <regex>
+
+using boost::str;
+using boost::format;
 
 Videoserver::Accelerator Videoserver::accelerator = Videoserver::Accelerator::CPU;
 
@@ -38,28 +44,25 @@ Videoserver::~Videoserver() {
 std::shared_ptr<Source> Videoserver::openSource(std::shared_ptr<SourceDto> config) {
     if (aliveSources.contains(config->source_url)) return aliveSources[config->source_url];
 
-    OATPP_LOGD("Videoserver", "created new source %s", config->source_url->c_str());
-    auto newSource = std::make_shared<Source>(config->source_url);
-    newSource->setRemoveBranchCallback(onBranchRemoved, new RemoveBranchData {
-        newSource.get(),
+    auto newURI = authURI(config->source_url.getValue(""), config->login.getValue(""), config->password.getValue(""));
+    OATPP_LOGD("Videoserver", "created new source %s", newURI.c_str());
+    auto newSource = std::make_shared<Source>(newURI);
+    aliveSources[newURI] = newSource;
+    auto removeBranch = new RemoveBranchData {
+        newSource,
         &aliveSources
-    });
+    };
+    
+    newSource->setRemoveBranchCallback(onBranchRemoved, removeBranch);
     newSource->addBusCallback("eos", Source::BusCallbackData{
         G_CALLBACK(onSourceStop),
-        new RemoveBranchData{
-            newSource.get(),
-            &aliveSources
-        }
+        removeBranch
     });
     newSource->addBusCallback("error", Source::BusCallbackData{
         G_CALLBACK(onSourceStop),
-        new RemoveBranchData{
-            newSource.get(),
-            &aliveSources
-        }
+        removeBranch
     });
     newSource->setState();
-    aliveSources[config->source_url] = newSource;
         
     return newSource;
 }
@@ -89,7 +92,7 @@ void Videoserver::onBranchRemoved(void* data) {
     }
 }
 
-bool Videoserver::onSourceStop(GstBus *bus, GstMessage *message, gpointer data) {
+void Videoserver::onSourceStop(GstBus *bus, GstMessage *message, gpointer data) {
     auto removeData = (RemoveBranchData*)data;
     OATPP_LOGD("Videoserver", "Removed source %s because something happend to stream", removeData->targetSource->getUUID().c_str());
     
@@ -102,7 +105,27 @@ bool Videoserver::onSourceStop(GstBus *bus, GstMessage *message, gpointer data) 
 
     // remove source itself
     removeData->allSources->erase(removeData->targetSource->getSource());
+    int matched = g_signal_handlers_disconnect_by_func(bus, (gpointer)onSourceStop, data);
+    OATPP_LOGD("Videoserver", "Disconnected %d handlers!", matched);
     delete removeData;
+}
 
-    return false;
+std::string Videoserver::authURI(const std::string &uri, const std::string &login, const std::string &password) {
+    if (login.empty() && password.empty())
+        return uri;
+
+    std::regex rgx("(.+)://(.+)");
+    std::smatch match;
+
+    OATPP_ASSERT_HTTP(
+        std::regex_match(uri, match, rgx), 
+        VSTypes::OatStatus::CODE_422, 
+        "Source URI is incorrect!"
+    );
+    
+    auto protocol = match[1].str();
+    auto tail = match[2].str();
+
+    auto authURI = str(format("%s://%s:%s@%s") % protocol % login % password % tail);
+    return authURI;
 }
