@@ -21,7 +21,6 @@ VSTypes::OatResponse VsapiController::getLive(const oatpp::Int32 &source, const 
             //.maxAttempt = YOUR VALUE
         };
 
-        OATPP_COMPONENT(std::shared_ptr<Videoserver>, videoserver);
         removebundle->timer = g_timeout_add_seconds(10, G_SOURCE_FUNC(timeoutCheckUsage), removebundle);
         liveStreams[source_obj->source_url] = newHandler;
         liveStreams_UUID[sourceid_str] = newHandler;

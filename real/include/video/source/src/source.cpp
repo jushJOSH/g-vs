@@ -18,11 +18,7 @@ Source::Source()
 Source::Source(const std::string &source)
 :   Source()
 {   
-    sourceElements = std::make_unique<PipeTree>(source);
     this->source = source;
-    this->bus = this->sourceElements->getBus();
-    gst_bus_add_signal_watch(this->bus);
-    
     auto discoverer = gst_discoverer_new(10 * GST_SECOND, NULL);
     if (!discoverer) throw std::runtime_error("Could not create discoverer for source probing");
 
@@ -30,8 +26,14 @@ Source::Source(const std::string &source)
     if (!info) throw std::runtime_error("Could not probe requested source");
 
     this->isLive = gst_discoverer_info_get_live(info);
+    this->sourceElements = std::make_unique<PipeTree>(source);
+    this->sourceElements->setLive(this->isLive);
+
     g_object_unref(discoverer);
     g_object_unref(info);
+
+    this->bus = this->sourceElements->getBus();
+    gst_bus_add_signal_watch(this->bus);
 }
 
 Source::Source(std::shared_ptr<SourceDto> config)

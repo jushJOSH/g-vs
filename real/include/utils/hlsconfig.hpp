@@ -17,6 +17,13 @@ struct HLSConfig {
         playlist_loc = str(format("%s/playlist.m3u8") % playlist_folder);
     }
 
+    std::string toString() const {
+        using boost::format;
+        using boost::str;
+        return str(format("folder %s\nroot %s\nlocationg %s\nsegment %s\nduration %d\nlenght %d\nbias %d")
+        % playlist_folder % playlist_root % playlist_loc % segment_loc % target_duration % playlist_length % bias);
+    }
+
     std::string playlist_folder; // folder for playlist and its segments
     std::string playlist_root; // playlist root (affects only inside playlist, not affect location)
     std::string playlist_loc; // playlist location

@@ -36,7 +36,7 @@ bool VsapiController::timeoutCheckUsage(gpointer data) {
     if ((previousTime + std::chrono::seconds(segmentLenght) + std::chrono::seconds(bias)) < currentTime
         && removeBundle->target->isReady())
     {
-        OATPP_LOGI("VsapiController", "Really timed out. Remove this funny");
+        OATPP_LOGI("VsapiController", "Really timed out. Remove");
         onBranchStop(removeBundle);
         return false;
     } else if (!removeBundle->target->isReady())

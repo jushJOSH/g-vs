@@ -179,6 +179,7 @@ void PipeTree::setSource(const std::string &source) {
     g_object_set(this->source, "uri", source.c_str(), NULL);
     
     g_signal_connect(this->source, "pad-added", G_CALLBACK(onNewPad), &padinfo);
+    g_signal_connect(this->source, "source-setup", G_CALLBACK(onSourceSet), &isLive);
     g_signal_connect(this->source, "no-more-pads", G_CALLBACK(onNoMorePads), &padinfo);
 }
 
@@ -214,4 +215,22 @@ void PipeTree::removeBranch_UNSAFE(const std::string &name) {
 
 std::shared_ptr<SourceDto> PipeTree::getConfig() const {
     return this->padinfo.config;
+}
+
+void PipeTree::onSourceSet(GstElement *bin, GstElement *source, gpointer data) {
+    OATPP_LOGD("PipeTree", "New Source set!");
+
+    auto factory = gst_element_get_factory(source);
+    auto longname = std::string(gst_element_factory_get_longname(factory));
+    OATPP_LOGD("PipeTree", "Source long name is '%s'", longname.c_str());
+    
+    if (longname.contains("HTTP")) {
+        OATPP_LOGW("PipeTree", "Source without timestamps!");
+        g_object_set(source, "do-timestamp", true, NULL);
+        g_object_set(source, "is-live", true, NULL);
+    }
+}
+
+void PipeTree::setLive(bool live) {
+    this->isLive = live;
 }

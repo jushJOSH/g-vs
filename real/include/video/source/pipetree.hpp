@@ -50,6 +50,7 @@ public:
     PipeTree(std::shared_ptr<SourceDto> config);
     ~PipeTree();
 
+    void setLive(bool live);
     void setSource(const std::string& source);
     void setBin(GstBin* bin);
     void removeBranch(const std::string &name);
@@ -75,16 +76,18 @@ private:
     static int manageBranchQueue(PadInfo& data);
     static void onNoMorePads(GstElement* src, PadInfo* data);
     static std::shared_ptr<DataLine> createDataline(const std::pair<std::string, GstPad*> &pad, const PadInfo &userData);
+    static void onSourceSet(GstElement *bin, GstElement* source, gpointer data);
 
     static std::string getProtocol(const std::string &uri);
 
 private:
     // Map of 'name' of branch and branch itself
+    bool isLive = false;
     std::string uuid;
     std::string source_uri;
     PadInfo padinfo;
     CallbackData cbdata;
-    
+
     // Uri decode bin
     GstElement* source;
     GstElement* pipeline;

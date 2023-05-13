@@ -23,6 +23,7 @@ StreamBranch::StreamBranch(std::shared_ptr<HLSConfig> config, bool sync)
     if (!loadBin())
         throw std::runtime_error("Could not link elements for some reason...");
 
+    OATPP_LOGD("StreamBranch", "Config:\n%s", config->toString().c_str());
     g_object_set(identity, "sync", sync, NULL);
     g_object_set(sink, "playlist-root", config->playlist_root.c_str(), NULL);
     g_object_set(sink, "playlist-location", config->playlist_loc.c_str(), NULL);
