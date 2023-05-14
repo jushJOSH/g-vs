@@ -19,7 +19,9 @@ public:
     StaticFilesManager(const oatpp::String& basePath)
         : m_basePath(basePath)
     {
-        if (!std::filesystem::create_directory(m_basePath->c_str())) {
+        std::error_code code;
+        if (!std::filesystem::create_directory(m_basePath->c_str(), code)
+            && code.value() != 0) {
             throw std::runtime_error("Could not create directory " + *m_basePath);
         }
     }

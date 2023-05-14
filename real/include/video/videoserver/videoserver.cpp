@@ -45,7 +45,7 @@ std::shared_ptr<Source> Videoserver::openSource(std::shared_ptr<SourceDto> confi
     if (aliveSources.contains(config->source_url)) return aliveSources[config->source_url];
 
     auto newURI = authURI(config->source_url.getValue(""), config->login.getValue(""), config->password.getValue(""));
-    OATPP_LOGD("Videoserver", "created new source %s", newURI.c_str());
+    OATPP_LOGD("Videoserver", "created new source %d (URI: %s)", config->id.getValue(-1), newURI.c_str());
     auto newSource = std::make_shared<Source>(newURI);
     aliveSources[newURI] = newSource;
     auto removeBranch = new RemoveBranchData {
