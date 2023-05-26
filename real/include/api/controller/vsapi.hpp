@@ -79,12 +79,13 @@ public:
     // ENDPOINT("GET", "/vsapi/frame", getFrame, AUTHORIZATION(std::shared_ptr<JwtPayload>, payload),
     //                                           QUERIES(QueryParams, QueryParams));
     // GET LIVE FOR SELECTED SOURCE OR MEDIA
-    ENDPOINT("GET", "/vsapi/live", getLive, QUERY(oatpp::Int32, source),
-                                            AUTHORIZATION(std::shared_ptr<JwtPayload>, payload));
+    ADD_CORS(getLive)
+    ENDPOINT("GET", "/vsapi/live", getLive, QUERY(oatpp::Int32, source));
+
+    ADD_CORS(getStatic)
     ENDPOINT("GET", "/vsapi/static/{source}/*",  getStatic,
              REQUEST(std::shared_ptr<IncomingRequest>, request),
-             PATH(oatpp::Int32, source),
-             AUTHORIZATION(std::shared_ptr<JwtPayload>, payload));
+             PATH(oatpp::Int32, source));
 
 // Api stuff
 private:

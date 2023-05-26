@@ -28,12 +28,13 @@ void runApi() {
                 serviceComponent.serverConnectionProvider.getObject(),
                 serviceComponent.serverConnectionHandler.getObject()
             );
-            OATPP_LOGW("API ROOT", "Server running insecure!");
+            OATPP_LOGI("API ROOT", "Server running insecure!");
         } else {
             server = std::make_shared<oatpp::network::Server>(
                 serviceComponent.secureConnectionProvider.getObject(),
                 serviceComponent.serverConnectionHandler.getObject()
             );
+            OATPP_LOGI("API ROOT", "Server running secure!");
         }
 
         OATPP_COMPONENT(oatpp::Object<ConfigDto>, config);

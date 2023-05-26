@@ -5,7 +5,7 @@
 
 #include <chrono>
 
-VSTypes::OatResponse VsapiController::getLive(const oatpp::Int32 &source, const std::shared_ptr<JwtPayload> &payload) {
+VSTypes::OatResponse VsapiController::getLive(const oatpp::Int32 &source) {
     using namespace std;
 
     auto source_obj = vsapiService.getSourceById(source);
@@ -41,7 +41,7 @@ VSTypes::OatResponse VsapiController::getLive(const oatpp::Int32 &source, const 
            : createResponse(Status::CODE_408);
 }
 
-VSTypes::OatResponse VsapiController::getStatic(const VSTypes::OatRequest &request, const oatpp::Int32 &source, const std::shared_ptr<JwtPayload> &payload) {
+VSTypes::OatResponse VsapiController::getStatic(const VSTypes::OatRequest &request, const oatpp::Int32 &source) {
     using namespace std;
 
     auto filepath = request->getPathTail();
