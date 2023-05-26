@@ -12,16 +12,21 @@
 using boost::format;
 using boost::str;
 
-DataLine::DataLine(LineType type, const std::string &encoder)
+DataLine::DataLine(LineType type, const std::string &encoder, bool sync)
 :   uuid(boost::uuids::to_string(boost::uuids::random_generator_mt19937()())),
     encoder_s(encoder),
     queue(gst_element_factory_make("queue", str(format("%1%_queue") % uuid).c_str())),
+    identity(gst_element_factory_make("identity", str(format("%1%_identity") % uuid).c_str())),
     type(type),
     bin(GST_BIN(gst_bin_new(str(format("%1%_bin") % uuid).c_str())))
 {
     OATPP_LOGD("DataLine", "Created dataline %s", uuid.c_str());
-    gst_bin_add(this->bin, 
-                this->queue);
+    g_object_set(identity, "sync", sync, NULL);
+    gst_bin_add_many(this->bin, 
+                     this->queue,
+                     this->identity, NULL);
+    if (!gst_element_link(queue, identity))
+        throw std::runtime_error("DataLine: Failed to link queue and identity");
 
     generateSinkPad();
 }

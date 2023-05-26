@@ -26,7 +26,7 @@ public:
         }
     }
     ~StaticFilesManager() {
-        std::filesystem::remove_all(m_basePath->c_str());
+        //std::filesystem::remove_all(m_basePath->c_str());
     }
 
     oatpp::String getFileCached(const oatpp::String& path);

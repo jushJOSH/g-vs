@@ -12,7 +12,7 @@
 class AudioLine : public DataLine
 {
 public:
-    AudioLine(double volume);
+    AudioLine(double volume, bool sync = false);
     ~AudioLine();
     
     void updateVolume(double volume);

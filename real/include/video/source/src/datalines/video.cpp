@@ -16,23 +16,24 @@ using boost::str;
 VideoLine::VideoLine(
     const std::string &encoder,
     int fps, 
-    int bitrate)
-:   DataLine(DataLine::LineType::Video, encoder),
+    int bitrate,
+    bool sync)
+:   DataLine(DataLine::LineType::Video, encoder, sync),
     videoconverter(gst_element_factory_make("videoconvert", str(format("%1%_videoconvert") % uuid).c_str())),
     videoscale(gst_element_factory_make("videoscale", str(format("%1%_videoscale") % uuid).c_str())),
     videorate(gst_element_factory_make("videorate", str(format("%1%_videorate") % uuid).c_str()))
 {
     this->encoder = createEncoder();
     OATPP_LOGD("VideoLine", "Created videoline %s", uuid.c_str());
-
+    
     gst_bin_add_many(this->bin, 
-                     this->videoconverter, 
+                     this->videoconverter,
                      this->videoscale, 
                      this->videorate, 
                      this->encoder, NULL);
 
     bool isLinkedOk = 
-        gst_element_link(this->queue, this->videoconverter) &&
+        gst_element_link(this->identity, this->videoconverter) &&
         gst_element_link(this->videoconverter, this->videoscale) &&
         gst_element_link(this->videoscale, this->videorate) &&
         gst_element_link(this->videorate, this->encoder);
@@ -88,6 +89,7 @@ VideoLine::~VideoLine() {
     gst_element_set_state(GST_ELEMENT(bin), GST_STATE_NULL);
     gst_bin_remove_many(this->bin, 
                         this->queue,
+                        this->identity,
                         this->videoconverter, 
                         this->videoscale,
                         this->videorate,

@@ -18,7 +18,7 @@ public:
     };
 
 public:
-    DataLine(LineType type, const std::string& encoder);
+    DataLine(LineType type, const std::string& encoder, bool sync = false);
     
     GstStateChangeReturn setState(GstState state = GST_STATE_PLAYING);
 
@@ -46,6 +46,7 @@ protected:
 
     GstBin *bin;
     GstElement *queue;
+    GstElement *identity;
     GstElement *encoder;
     
     GstPad* previousPad;

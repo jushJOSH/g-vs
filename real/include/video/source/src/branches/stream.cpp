@@ -13,10 +13,12 @@ using boost::str;
 
 StreamBranch::StreamBranch(std::shared_ptr<HLSConfig> config, bool sync)
 :   PipeBranch(
-        "hlssink",
-        "mpegtsmux"
-    ),
-    identity(gst_element_factory_make("identity", NULL))
+        "hlssink2",
+        "",
+        nullptr,
+        sync
+    )
+    
 {
     OATPP_LOGD("StreamBranch", "Created stream branch %s", uuid.c_str());
     
@@ -24,7 +26,6 @@ StreamBranch::StreamBranch(std::shared_ptr<HLSConfig> config, bool sync)
         throw std::runtime_error("Could not link elements for some reason...");
 
     OATPP_LOGD("StreamBranch", "Config:\n%s", config->toString().c_str());
-    g_object_set(identity, "sync", sync, NULL);
     g_object_set(sink, "playlist-root", config->playlist_root.c_str(), NULL);
     g_object_set(sink, "playlist-location", config->playlist_loc.c_str(), NULL);
     g_object_set(sink, "location", config->segment_loc.c_str(), NULL);
@@ -32,28 +33,40 @@ StreamBranch::StreamBranch(std::shared_ptr<HLSConfig> config, bool sync)
     g_object_set(sink, "playlist-length", config->playlist_length, NULL);
 }
 
-StreamBranch::StreamBranch(const std::string &playlistFolder, const std::string &playlistId, int targetDuration, int playlistLenght, int bias)
+StreamBranch::StreamBranch(const std::string &playlistFolder, const std::string &playlistId, int targetDuration, int playlistLenght, int bias, bool sync)
 :   StreamBranch(std::make_shared<HLSConfig>(
         playlistFolder, playlistId, targetDuration, playlistLenght, bias 
     ))
 {}
 
 bool StreamBranch::loadBin() {
-    gst_bin_add_many(bin, sink, muxer, identity, NULL);
-    return gst_element_link_many(muxer, identity, sink, NULL);
+    gst_bin_add_many(bin, sink, NULL);
+    return true;
 }
 
 void StreamBranch::unloadBin() {
     gst_element_set_state(GST_ELEMENT(bin), GST_STATE_NULL);
-    gst_bin_remove_many(bin, sink, identity, muxer, NULL);
+    gst_bin_remove(bin, sink);
 }
 
 GstPad* StreamBranch::getSinkPad(DataLine::LineType type) {
-    GstPad* newPad = nullptr;
-    OATPP_LOGI("StreamBranch", "Getting new pad");
-    newPad = gst_element_request_pad_simple(muxer, "sink_%d");
+GstPad* newPad = nullptr;
+    switch(type) {
+        case DataLine::LineType::Audio:
+        OATPP_LOGI("StreamBranch", "Getting new audio pad");
+        newPad = gst_element_request_pad_simple(sink, "audio");
+        break;
 
-    if (gst_pad_is_linked(newPad)) return nullptr;
+        case DataLine::LineType::Video:
+        OATPP_LOGI("StreamBranch", "Getting new video pad");
+        newPad = gst_element_request_pad_simple(sink, "video");
+        break;
+
+        default:
+        OATPP_LOGW("StreamBranch", "Getting new unknown pad");
+        return nullptr;
+    }
+
     auto padName = gst_pad_get_name(newPad);
     auto ghostPadName = str(format("%1%_%2%_ghost") % uuid % padName).c_str();
     auto ghostPad = gst_ghost_pad_new(

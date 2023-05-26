@@ -11,23 +11,23 @@ using boost::format;
 using boost::str;
 
 AudioLine::AudioLine(
-    double volume)
+    double volume, bool sync)
 
-:   DataLine(DataLine::LineType::Audio, ""),
+:   DataLine(DataLine::LineType::Audio, "", sync),
     audioconverter(gst_element_factory_make("audioconvert", str(format("%1%_audioconvert") % uuid).c_str())),
     volume(gst_element_factory_make("volume", str(format("%1%_volume") % uuid).c_str()))
 {
     this->encoder = gst_element_factory_make("avenc_aac", str(format("%1%_avenc_aac") % uuid).c_str());
     OATPP_LOGD("AudioLine", "Created audioline %s", uuid.c_str());
-
-    gst_bin_add_many(this->bin, 
+    
+    gst_bin_add_many(this->bin,
                      this->audioconverter, 
                      this->audioconverter, 
                      this->volume, 
                      this->encoder, NULL);
 
     bool isLinkedOk = 
-        gst_element_link(this->queue, this->audioconverter) &&
+        gst_element_link(this->identity, this->audioconverter) &&
         gst_element_link(this->audioconverter, this->volume) &&
         gst_element_link(this->volume, this->encoder);
 
@@ -60,6 +60,7 @@ AudioLine::~AudioLine() {
     gst_element_set_state(GST_ELEMENT(bin), GST_STATE_NULL);
     gst_bin_remove_many(this->bin,
                         this->queue, 
+                        this->identity,
                         this->audioconverter, 
                         this->volume, 
                         this->encoder, NULL);

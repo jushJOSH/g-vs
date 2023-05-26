@@ -14,11 +14,12 @@
 using boost::format;
 using boost::str;
 
-PipeBranch::PipeBranch(const std::string &sink, const std::string &muxer, std::shared_ptr<SourceDto> config) 
+PipeBranch::PipeBranch(const std::string &sink, const std::string &muxer, std::shared_ptr<SourceDto> config, bool sync) 
 :   uuid(boost::uuids::to_string(boost::uuids::random_generator_mt19937()())),
     muxer(gst_element_factory_make(muxer.c_str(), str(format("%1%_%2%") % uuid % muxer).c_str())),
     sink(gst_element_factory_make(sink.c_str(), str(format("%1%_%2%") % uuid % sink).c_str())),
-    bin(GST_BIN(gst_bin_new(str(format("%1%_bin") % uuid).c_str())))
+    bin(GST_BIN(gst_bin_new(str(format("%1%_bin") % uuid).c_str()))),
+    _sync(sync)
 {   
     this->config = config == nullptr ? std::make_shared<SourceDto>() : config;
     OATPP_LOGD("PipeBranch", "Branch created %s", uuid.c_str());
@@ -50,7 +51,8 @@ std::shared_ptr<DataLine> PipeBranch::createFilter(const std::string &padType) {
     if (padType == "audio/x-raw") {
         newLine = std::make_shared<AudioLine>(
             //config->quality,
-            config->volume);
+            config->volume,
+            _sync);
         std::reinterpret_pointer_cast<AudioLine>(newLine)->mute(config->mute);
     }
     else if (padType == "video/x-raw") {
@@ -58,7 +60,8 @@ std::shared_ptr<DataLine> PipeBranch::createFilter(const std::string &padType) {
             config->videoencoding,
             //VideoLine::strToResolution(config->resolution),
             config->fps,
-            config->bitrate
+            config->bitrate,
+            _sync
         );
     }
     else newLine = nullptr;

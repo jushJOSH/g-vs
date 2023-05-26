@@ -10,7 +10,7 @@
 class StreamBranch : public PipeBranch { 
 public:
     StreamBranch(std::shared_ptr<HLSConfig> config, bool sync = false);
-    StreamBranch(const std::string &playlistFolder, const std::string &playlistId, int targetDuration, int playlistLenght, int bias = 2);
+    StreamBranch(const std::string &playlistFolder, const std::string &playlistId, int targetDuration, int playlistLenght, int bias = 2, bool sync = false);
     ~StreamBranch();
 
     GstPad* getSinkPad(DataLine::LineType type);
@@ -18,7 +18,4 @@ public:
 
     bool loadBin();
     void unloadBin();
-
-private:
-    GstElement* identity;
 };

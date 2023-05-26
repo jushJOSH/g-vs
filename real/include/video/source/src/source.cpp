@@ -60,7 +60,7 @@ std::string Source::getUUID() const {
 }
 
 std::shared_ptr<StreamBranch> Source::runStream(std::shared_ptr<HLSConfig> config) {
-    auto streamBranch = std::make_shared<StreamBranch>(config, !isLive);
+    auto streamBranch = std::make_shared<StreamBranch>(config, true);
     sourceElements->addBranch(streamBranch);
 
     return streamBranch;

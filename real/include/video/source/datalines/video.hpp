@@ -14,7 +14,7 @@
 class VideoLine : public DataLine
 {
 public:
-    VideoLine(const std::string &encoder, int fps, int bitrate);
+    VideoLine(const std::string &encoder, int fps, int bitrate, bool sync = false);
     ~VideoLine();
 
     void updateBitrate(int bitrate);
