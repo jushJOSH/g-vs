@@ -1,12 +1,14 @@
 #include <video/live/live.hpp>
 
 #include <video/videoserver/videoserver.hpp>
+#include <api/multipart/multipart.hpp>
 
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 
 #include <oatpp/web/protocol/http/outgoing/StreamingBody.hpp>
 #include <oatpp/core/data/stream/FileStream.hpp>
+#include <oatpp/web/protocol/http/outgoing/MultipartBody.hpp>
 
 #include <oatpp/web/protocol/http/outgoing/ResponseFactory.hpp>
 
@@ -56,8 +58,11 @@ oatpp::String LiveHandler::getPlaylist() {
 VSTypes::OatResponse LiveHandler::getSegment(const oatpp::String &requestedSegment) {
     auto file = str(format("%s/%s") % fileManager->getBasePath()->c_str() % requestedSegment->c_str());
 
-    auto body = std::make_shared<oatpp::web::protocol::http::outgoing::StreamingBody>(
-        std::make_shared<oatpp::data::stream::FileInputStream>(file.c_str())
+    auto multipart = std::make_shared<MPStreamer>(file);
+    auto body = std::make_shared<oatpp::web::protocol::http::outgoing::MultipartBody>(
+        multipart,
+        "application/x-mpegURL",
+        true
     );
 
     this->lastSegmentRequest = std::chrono::system_clock::now();
